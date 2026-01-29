@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SeniorCitizen {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime?
+  gender            String?
+  phone             String   @unique
+  email             String?
+  address           String
+  district          String?
+
+  aadharNumber      String?
+
+  photoUrl          String?
+  medicalConditions String?
+  emergencyContact  String?
+
+  latitude          Float?
+  longitude         Float?
+
+  riskLevel         String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  status            String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  policeStationId String?
+  policeStation   PoliceStation? @relation(fields: [policeStationId], references: [id])
+
+  beatOfficerId   String?
+  beatOfficer     BeatOfficer?   @relation(fields: [beatOfficerId], references: [id])
+
+  visits    Visit[]
+  sosAlerts SOSAlert[]
+  user      User?
+}
+
+model PoliceStation {
+  id           String   @id @default(cuid())
+  name         String
+  location     String
+  jurisdiction String?
+
+  officers     BeatOfficer[]
+  citizens     SeniorCitizen[]
+}
+
+model BeatOfficer {
+  id              String   @id @default(cuid())
+  name            String
+  rank            String
+  phone           String   @unique
+  email           String?
+
+  policeStationId String
+  policeStation   PoliceStation @relation(fields: [policeStationId], references: [id])
+
+  assignedCitizens SeniorCitizen[]
+  visits           Visit[]
+  user             User?
+}
+
+model Visit {
+  id          String   @id @default(cuid())
+  date        DateTime
+  notes       String?
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, MISSED
+
+  citizenId   String
+  citizen     SeniorCitizen @relation(fields: [citizenId], references: [id])
+
+  officerId   String
+  officer     BeatOfficer   @relation(fields: [officerId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SOSAlert {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  latitude  Float?
+  longitude Float?
+  status    String   @default("OPEN") // OPEN, RESOLVED, FALSE_ALARM
+
+  citizenId String
+  citizen   SeniorCitizen @relation(fields: [citizenId], references: [id])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  phone     String   @unique
+  password  String
+  role      String   // Role code (e.g., ADMIN, OFFICER)
+  fullName  String?
+  isActive  Boolean  @default(true)
+
+  // Relations
+  citizenId String?  @unique
+  citizenProfile SeniorCitizen? @relation(fields: [citizenId], references: [id])
+
+  officerId String?  @unique
+  officerProfile BeatOfficer?   @relation(fields: [officerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

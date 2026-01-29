@@ -1,0 +1,118 @@
+# How to Add New Permissions for New Menus
+
+This guide explains how to secure a new feature (Menu & Submenu) using the dynamic permission system.
+
+**Scenario:** You are building a new **"Inventory"** module.
+-   **Menu:** Inventory
+-   **Submenu:** Manage Items (`/admin/inventory/items`)
+
+---
+
+## Step 1: Create Permission in Master
+First, define the permission in the database so it appears in the UI.
+
+1.  Go to **Admin > Masters > Permission Master**.
+2.  Click **"New Permission"**.
+3.  **Create the Parent (Menu) Permission:**
+    -   **Name:** Inventory
+    -   **Code:** `inventory.view` (Standard: `module.action`)
+    -   **Category:** Admin (or create a new one)
+    -   **Is Menu Item?** ✅ Yes
+    -   **Menu Path:** `/admin/inventory` (Optional, for parent)
+    -   **Menu Icon:** `Box` (or any Lucide icon name)
+    -   Click **Save**.
+4.  **Create the Child (Submenu) Permission:**
+    -   **Name:** Manage Items
+    -   **Code:** `inventory.manage`
+    -   **Category:** Admin
+    -   **Parent Permission:** Select "Inventory" (created above)
+    -   **Is Menu Item?** ✅ Yes
+    -   **Menu Path:** `/admin/inventory/items`
+    -   Click **Save**.
+
+---
+
+## Step 2: Assign Permission to Role
+Now that the permission exists, give it to a user.
+
+1.  Go to **Admin > Masters > Roles**.
+2.  Edit a Role (e.g., **ADMIN** or **CONSTABLE**).
+3.  In the "Permissions" section, look for the **"Admin"** category (or whatever you chose).
+4.  Check the box for **"Inventory"** and **"Manage Items"**.
+5.  Click **Update Role**.
+
+---
+
+## Step 3: Implement in Code
+Now, protect the actual page in your Next.js app.
+
+### A. Protect the Page ([page.tsx](file:///d:/Bhuma/kutumbfinal/app/sos/page.tsx))
+In your new page file, wrap the content with [ProtectedRoute](file:///d:/Bhuma/kutumbfinal/components/auth/protected-route.tsx#20-90).
+
+**File:** `app/admin/inventory/items/page.tsx`
+
+```tsx
+'use client';
+
+import { ProtectedRoute } from '@/components/auth/protected-route';
+
+export default function InventoryItemsPage() {
+    return (
+        // 🔒 This ensures ONLY users with 'inventory.manage' can see this page
+        <ProtectedRoute permissionCode="inventory.manage">
+            <div className="p-6">
+                <h1 className="text-2xl font-bold">Manage Inventory Items</h1>
+                {/* Your content here */}
+            </div>
+        </ProtectedRoute>
+    );
+}
+```
+
+### B. Add to Sidebar (Navigation)
+If your sidebar is dynamic (fetching from DB), it will appear automatically because you checked **"Is Menu Item?"**.
+
+If your sidebar is **hardcoded** (in `components/admin/sidebar.tsx`), you need to update it to verify permission before rendering the link.
+
+```tsx
+// components/admin/sidebar.tsx
+import { useAuth } from '@/contexts/auth-context';
+
+export function Sidebar() {
+    const { hasPermission } = useAuth(); // Get helper function
+
+    return (
+        <nav>
+            {/* Other links... */}
+
+            {/* 🔒 Only show link if user has permission */}
+            {hasPermission('inventory.view') && (
+                <Link href="/admin/inventory">
+                    <Icon name="Box" /> Inventory
+                </Link>
+            )}
+        </nav>
+    );
+}
+```
+
+---
+
+## Summary check
+
+| Step | Action | Outcome |
+|------|--------|---------|
+| 1 | **Create Permission** | DB knows about `inventory.manage`. |
+| 2 | **Assign to Role** | Role `ADMIN` is linked to `inventory.manage`. |
+| 3 | **Login** | Backend sends `["inventory.manage"]` in token/response. |
+| 4 | **[ProtectedRoute](file:///d:/Bhuma/kutumbfinal/components/auth/protected-route.tsx#20-90)** | Checks if `user.permissions` includes `"inventory.manage"`. |
+| 5 | **Success** | Page renders! ✅ |
+
+---
+
+## Troubleshooting "Access Denied"
+
+If you see "Access Denied" after setup:
+1.  **Did you Log Out & Log In?** Permissions are loaded *only* at login.
+2.  **Check Spelling:** Does `permissionCode="inventory.manage"` match the **Code** in Master EXACTLY? (Case-sensitive!)
+3.  **Check Role:** Did you actually save the role update?
