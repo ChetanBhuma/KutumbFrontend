@@ -993,6 +993,23 @@ class ApiClient {
     async deleteCategory(id: string) {
         return this.delete<any>(`/permissions/categories/${id}`);
     }
+
+    // Notification APIs
+    async getNotifications(page = 1, limit = 20) {
+        return this.get<any>('/notifications', { params: { page, limit } });
+    }
+
+    async markNotificationRead(id: string) {
+        return this.patch<any>(`/notifications/${id}/read`);
+    }
+
+    async markAllNotificationsRead() {
+        return this.patch<any>('/notifications/read-all');
+    }
+
+    async deleteNotification(id: string) {
+        return this.delete<any>(`/notifications/${id}`);
+    }
 }
 
 // Export singleton instance

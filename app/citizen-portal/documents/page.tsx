@@ -151,10 +151,8 @@ export default function CitizenDocumentsPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="icon" asChild>
-                                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                                                <Eye className="h-4 w-4" />
-                                            </a>
+                                        <Button variant="ghost" size="icon" onClick={() => apiClient.viewDocument(doc.fileUrl)}>
+                                            <Eye className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </CardContent>

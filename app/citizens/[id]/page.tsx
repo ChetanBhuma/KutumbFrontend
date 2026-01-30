@@ -48,6 +48,50 @@ const InfoItem = ({ icon: Icon, label, value, className }: { icon: any, label: s
     </div>
 );
 
+const AssessmentDataViewer = ({ data }: { data: any }) => {
+    if (!data) return null;
+
+    // Handle nested sections structure if present, otherwise treat as flat or simple object
+    const content = data.sections || data;
+
+    return (
+        <div className="space-y-6">
+            {Object.entries(content).map(([sectionKey, sectionValue]: [string, any]) => {
+                if (!sectionValue || typeof sectionValue !== 'object') return null;
+
+                return (
+                    <Card key={sectionKey} className="overflow-hidden border shadow-sm">
+                        <CardHeader className="py-3 bg-muted/40 border-b">
+                            <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-primary" />
+                                {sectionKey.replace(/([A-Z])/g, ' $1').trim()}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                                {Object.entries(sectionValue).map(([fieldKey, fieldValue]: [string, any]) => {
+                                    if (typeof fieldValue === 'object' && fieldValue !== null) return null; // Skip deep nesting for now
+
+                                    return (
+                                        <div key={fieldKey} className="group">
+                                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-1.5 group-hover:text-primary transition-colors">
+                                                {fieldKey.replace(/([A-Z])/g, ' $1').trim()}
+                                            </p>
+                                            <p className="text-sm font-semibold text-foreground/90 break-words leading-relaxed">
+                                                {String(fieldValue)}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+        </div>
+    );
+};
+
 export default function CitizenDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -302,6 +346,7 @@ export default function CitizenDetailPage() {
                                     <TabsTrigger value="health" className="flex-1 min-w-0 sm:min-w-[90px] rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-primary font-medium transition-all text-xs sm:text-sm px-2 sm:px-4">Health</TabsTrigger>
 
                                     <TabsTrigger value="official" className="flex-1 min-w-0 sm:min-w-[90px] rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-primary font-medium transition-all text-xs sm:text-sm px-2 sm:px-4">Official</TabsTrigger>
+                                    <TabsTrigger value="assessment" className="flex-1 min-w-0 sm:min-w-[90px] rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-primary font-medium transition-all text-xs sm:text-sm px-2 sm:px-4">Assessment</TabsTrigger>
                                     <TabsTrigger value="history" className="flex-1 min-w-0 sm:min-w-[90px] rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-primary font-medium transition-all text-xs sm:text-sm px-2 sm:px-4">History</TabsTrigger>
                                 </TabsList>
 
@@ -602,10 +647,6 @@ export default function CitizenDetailPage() {
                                                                         </a>
                                                                     )}
                                                                 </div>
-                                                                {/* <div className="flex items-center gap-2 text-sm">
-                                                                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                                                                    <span className="truncate">{contact.address || 'Address not available'}</span>
-                                                                </div> */}
                                                             </div>
                                                         </div>
                                                     ))}
@@ -734,6 +775,53 @@ export default function CitizenDetailPage() {
                                     </Card>
 
                                     {/* Step 10 moved to Overview tab */}
+                                </TabsContent>
+
+                                <TabsContent value="assessment" className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+                                    <Card className="shadow-md">
+                                        <CardHeader className="border-b bg-muted/30">
+                                            <CardTitle className="flex items-center gap-2">
+                                                <ClipboardCheck className="h-5 w-5 text-primary" /> Latest Assessment Details
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-6">
+                                            {(() => {
+                                                // Combine sources or use fallback like other tabs
+                                                const sourceVisits = visits.length > 0 ? visits : (citizen.Visit || []);
+
+                                                const assessmentVisit = sourceVisits
+                                                    .filter((v: any) => v.assessmentData && Object.keys(v.assessmentData).length > 0)
+                                                    .sort((a: any, b: any) => new Date(b.completedDate || b.scheduledDate).getTime() - new Date(a.completedDate || a.scheduledDate).getTime())[0];
+
+                                                if (!assessmentVisit) {
+                                                    return (
+                                                        <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/10 rounded-xl border-dashed border-2">
+                                                            <ClipboardCheck className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                                                            <h3 className="text-lg font-medium">No assessment data</h3>
+                                                            <p className="text-muted-foreground">No assessment forms have been filled for this citizen yet.</p>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="space-y-6">
+                                                        <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10">
+                                                            <div>
+                                                                <p className="text-sm font-medium text-muted-foreground">Assessment Date</p>
+                                                                <p className="font-bold text-lg">{format(new Date(assessmentVisit.completedDate || assessmentVisit.scheduledDate), 'PPP')}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-sm font-medium text-muted-foreground">Officer</p>
+                                                                <p className="font-bold">{assessmentVisit.officer?.name || 'Unknown'}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <AssessmentDataViewer data={assessmentVisit.assessmentData} />
+                                                    </div>
+                                                );
+                                            })()}
+                                        </CardContent>
+                                    </Card>
                                 </TabsContent>
 
                                 <TabsContent value="history" className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">

@@ -1,31 +1,53 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { NotificationCenter } from "./notification-center"
-import { mockNotifications, getNotificationStats } from "@/lib/notifications-data"
+import apiClient from "@/lib/api-client"
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
-  const stats = getNotificationStats(mockNotifications)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await apiClient.getNotifications(1, 1)
+      if (response && response.data) {
+        setUnreadCount(response.data.unread)
+      }
+    } catch (error) {
+      console.error("Failed to fetch notification count", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchUnreadCount()
+    const interval = setInterval(fetchUnreadCount, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleClose = () => {
+    setIsOpen(false)
+    fetchUnreadCount()
+  }
 
   return (
     <>
       <Button variant="ghost" size="sm" className="relative" onClick={() => setIsOpen(!isOpen)}>
         <Bell className="h-5 w-5" />
-        {stats.unread > 0 && (
+        {unreadCount > 0 && (
           <Badge
             variant="destructive"
             className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
           >
-            {stats.unread > 9 ? "9+" : stats.unread}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </Badge>
         )}
       </Button>
 
-      <NotificationCenter isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <NotificationCenter isOpen={isOpen} onClose={handleClose} />
     </>
   )
 }

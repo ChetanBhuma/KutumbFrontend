@@ -821,6 +821,14 @@ function RegistrationContent() {
                                         maxLength={10}
                                     />
                                 </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label>Relation</Label>
+                                    <Input
+                                        value={detailsForm.emergencyContactRelation}
+                                        onChange={(e) => setDetailsForm(prev => ({ ...prev, emergencyContactRelation: e.target.value }))}
+                                        placeholder="e.g. Friend"
+                                    />
+                                </div>
                             </div>
                         </div>
 

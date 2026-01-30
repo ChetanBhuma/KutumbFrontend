@@ -76,7 +76,9 @@ export default function CitizenDashboard() {
                     if (!isMounted) return;
 
                     if (visitsRes.success) {
-                        setVisits(visitsRes.data.items || visitsRes.data.visits || []);
+                        const items = visitsRes.data.items || visitsRes.data.visits || [];
+                        console.log('Dashboard Visits Data:', items);
+                        setVisits(items);
                     }
 
                     const alerts = sosRes.data?.items || sosRes.data?.alerts || [];
@@ -167,19 +169,19 @@ export default function CitizenDashboard() {
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-8">
                                 <ServiceButton href="/citizen-portal/visits/request" icon={<Stethoscope />} label="Recall Beat Officer" color="blue" />
                                 <ServiceButton href="/citizen-portal/visits" icon={<Calendar />} label="My Visits" color="indigo" />
-                                <ServiceButton href="#" icon={<FileQuestion />} label="Lost Report" color="orange" />
-                                <ServiceButton href="#" icon={<Car />} label="MV Theft E-FIR" color="red" />
-                                <ServiceButton href="#" icon={<UserX />} label="Missing Person" color="rose" />
-                                <ServiceButton href="#" icon={<Search />} label="Track Child" color="amber" />
-                                <ServiceButton href="#" icon={<Smartphone />} label="Stolen Mobile" color="purple" />
-                                <ServiceButton href="#" icon={<FileText />} label="View FIR" color="cyan" />
-                                <ServiceButton href="#" icon={<FileCheck />} label="Police Clearance" color="emerald" />
-                                <ServiceButton href="#" icon={<User />} label="Character Verif." color="teal" />
-                                <ServiceButton href="#" icon={<Users />} label="Tenant Reg." color="lime" />
-                                <ServiceButton href="#" icon={<Shield />} label="Senior Citizen" color="sky" />
-                                <ServiceButton href="#" icon={<FileEdit />} label="Complaint" color="pink" />
-                                <ServiceButton href="#" icon={<Download />} label="Download Forms" color="gray" />
-                                <ServiceButton href="#" icon={<MessageSquare />} label="Feedback" color="fuchsia" />
+                                <ServiceButton href="https://lostfound.delhipolice.gov.in/" target="_blank" icon={<FileQuestion />} label="Lost Report" color="orange" />
+                                <ServiceButton href="https://mvt.delhipolice.gov.in/Home.aspx?aspxerrorpath=/welcome.aspx" target="_blank" icon={<Car />} label="MV Theft E-FIR" color="red" />
+                                <ServiceButton href="https://cctns.delhipolice.gov.in/citizenservices/missingpersonregistration.htm" target="_blank" icon={<UserX />} label="Missing Person" color="rose" />
+                                <ServiceButton href="https://missionvatsalya.wcd.gov.in/" target="_blank" icon={<Search />} label="Track Child" color="amber" />
+                                <ServiceButton href="https://zipnet.delhipolice.gov.in/vehiclesmobiles/missingmobiles/" target="_blank" icon={<Smartphone />} label="Stolen Mobile" color="purple" />
+                                <ServiceButton href="https://delhipolice.gov.in/viewfir" target="_blank" icon={<FileText />} label="View FIR" color="cyan" />
+                                <ServiceButton href="https://pcc.delhipolice.gov.in/" target="_blank" icon={<FileCheck />} label="Police Clearance" color="emerald" />
+                                <ServiceButton href="https://cvr.delhipolice.gov.in/" target="_blank" icon={<User />} label="Character Verif." color="teal" />
+                                <ServiceButton href="https://cctns.delhipolice.gov.in/citizenservices/login.htm" target="_blank" icon={<Users />} label="Tenant Reg." color="lime" />
+                                {/* <ServiceButton href="#" icon={<Shield />} label="Senior Citizen" color="sky" /> */}
+                                <ServiceButton href="https://cctns.delhipolice.gov.in/citizenicms/" target="_blank" icon={<FileEdit />} label="Complaint" color="pink" />
+                                <ServiceButton href="https://delhipolice.gov.in/downloadforms" target="_blank" icon={<Download />} label="Download Forms" color="gray" />
+                                {/* <ServiceButton href="#" icon={<MessageSquare />} label="Feedback" color="fuchsia" /> */}
                                 <ServiceButton href="/citizen-portal/profile" icon={<User />} label="My Profile" color="violet" />
                             </div>
                         </CardContent>
@@ -238,13 +240,32 @@ export default function CitizenDashboard() {
                             <div className="h-6 w-1 bg-green-500 rounded-full"></div>
                             <h2 className="text-lg font-bold text-slate-800">Assigned Officer</h2>
                         </div>
-                        <StatusCard
-                            icon={<Shield className="h-6 w-6 text-white" />}
-                            title="Beat Officer"
-                            value={profile?.beat?.beatOfficers?.[0]?.officer?.name || "Unassigned"}
-                            subtext={profile?.beat?.beatOfficers?.[0]?.officer?.mobileNumber || "Contact Station"}
-                            color="blue"
-                        />
+                        {/* Calculate assigned officer from visits first */}
+                        {(() => {
+                            // Find active visit with officer (Case insensitive check)
+                            const activeVisit = visits.find((v: any) => {
+                                const status = v.status?.toLowerCase();
+                                return (status === 'scheduled' || status === 'in progress' || status === 'pending') && v.officer;
+                            });
+
+                            const assignedVisitOfficer = activeVisit?.officer;
+
+                            // Determine display values
+                            const isVisitOfficer = !!assignedVisitOfficer;
+                            const title = isVisitOfficer ? "Assigned Officer (Visit)" : "Beat Officer";
+                            const name = assignedVisitOfficer?.name || profile?.beat?.beatOfficers?.[0]?.officer?.name || "Unassigned";
+                            const contact = assignedVisitOfficer?.mobileNumber || profile?.beat?.beatOfficers?.[0]?.officer?.mobileNumber || "Contact Station";
+
+                            return (
+                                <StatusCard
+                                    icon={<Shield className="h-6 w-6 text-white" />}
+                                    title={title}
+                                    value={name}
+                                    subtext={contact}
+                                    color={isVisitOfficer ? "green" : "blue"}
+                                />
+                            );
+                        })()}
 
                         <div className="flex items-center gap-2 px-1 mt-6">
                             <h2 className="text-lg font-bold text-slate-800">Emergency Helplines</h2>
@@ -310,7 +331,7 @@ export default function CitizenDashboard() {
 }
 
 // Circular Service Button Component
-function ServiceButton({ href, icon, label, color }: any) {
+function ServiceButton({ href, icon, label, color, target }: any) {
     const colorClasses: any = {
         blue: 'bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white',
         indigo: 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white',
@@ -331,7 +352,7 @@ function ServiceButton({ href, icon, label, color }: any) {
     };
 
     return (
-        <Link href={href} className="group flex flex-col items-center gap-3">
+        <Link href={href} target={target} className="group flex flex-col items-center gap-3">
             <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm group-hover:scale-110 group-hover:shadow-lg ${colorClasses[color] || colorClasses.blue}`}>
                 <div className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
                     {icon}

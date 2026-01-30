@@ -1,24 +1,27 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell, CheckCheck, Clock, AlertTriangle, Info, User, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { mockNotifications, getNotificationStats } from "@/lib/notifications-data"
+import apiClient from "@/lib/api-client"
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case "visit_reminder":
+    case "reminder":
       return <Clock className="h-4 w-4" />
     case "visit_overdue":
+    case "alert":
       return <AlertTriangle className="h-4 w-4" />
     case "approval_required":
       return <CheckCheck className="h-4 w-4" />
     case "assignment_new":
       return <User className="h-4 w-4" />
     case "system_alert":
+    case "system":
       return <Info className="h-4 w-4" />
     default:
       return <Bell className="h-4 w-4" />
@@ -26,7 +29,7 @@ const getNotificationIcon = (type: string) => {
 }
 
 const getPriorityColor = (priority: string) => {
-  switch (priority) {
+  switch (priority.toLowerCase()) {
     case "urgent":
       return "bg-red-500"
     case "high":
@@ -34,16 +37,19 @@ const getPriorityColor = (priority: string) => {
     case "medium":
       return "bg-blue-500"
     case "low":
+    case "normal":
       return "bg-gray-500"
     default:
       return "bg-gray-500"
   }
 }
 
-const formatTimeAgo = (date: Date) => {
+const formatTimeAgo = (date: string | Date) => {
   const now = new Date()
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+  const d = new Date(date)
+  const diffInMinutes = Math.floor((now.getTime() - d.getTime()) / (1000 * 60))
 
+  if (diffInMinutes < 1) return "Just now"
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`
   if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
   return `${Math.floor(diffInMinutes / 1440)}d ago`
@@ -55,22 +61,64 @@ interface NotificationCenterProps {
 }
 
 export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const [notifications, setNotifications] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState("all")
+  const [stats, setStats] = useState({ total: 0, unread: 0 })
+  const [loading, setLoading] = useState(false)
 
-  const stats = getNotificationStats(notifications)
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
+  const fetchNotifications = async () => {
+    setLoading(true)
+    try {
+      const response = await apiClient.getNotifications(1, 50)
+      if (response && response.data) {
+        setNotifications(response.data.notifications)
+        setStats({
+          total: response.data.total,
+          unread: response.data.unread
+        })
+      }
+    } catch (error) {
+      console.error("Failed to fetch notifications", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const markAllAsRead = () => {
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications()
+    }
+  }, [isOpen])
+
+  const markAsRead = async (id: string) => {
+    // Optimistic update
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
+    setStats((prev) => ({ ...prev, unread: Math.max(0, prev.unread - 1) }))
+
+    try {
+      await apiClient.markNotificationRead(id)
+    } catch (error) {
+      console.error("Failed to mark notification read", error)
+    }
+  }
+
+  const markAllAsRead = async () => {
+    // Optimistic update
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    setStats((prev) => ({ ...prev, unread: 0 }))
+
+    try {
+      await apiClient.markAllNotificationsRead()
+    } catch (error) {
+      console.error("Failed to mark all read", error)
+    }
   }
 
   const filteredNotifications = notifications.filter((notification) => {
     if (activeTab === "unread") return !notification.isRead
-    if (activeTab === "urgent") return notification.priority === "urgent" || notification.priority === "high"
+    if (activeTab === "urgent") {
+      return notification.priority === "urgent" || notification.priority === "high" || notification.priority === "URGENT" || notification.priority === "HIGH"
+    }
     return true
   })
 
@@ -105,20 +153,21 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
             <TabsList className="grid w-full grid-cols-3 mx-4 mb-4">
               <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
               <TabsTrigger value="unread">Unread ({stats.unread})</TabsTrigger>
-              <TabsTrigger value="urgent">Urgent ({stats.byPriority.urgent || 0})</TabsTrigger>
+              <TabsTrigger value="urgent">Urgent</TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab} className="mt-0">
               <div className="max-h-96 overflow-y-auto">
-                {filteredNotifications.length === 0 ? (
+                {loading ? (
+                  <div className="p-8 text-center text-muted-foreground">Loading...</div>
+                ) : filteredNotifications.length === 0 ? (
                   <div className="p-4 text-center text-muted-foreground">No notifications found</div>
                 ) : (
                   filteredNotifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-4 border-b hover:bg-muted/50 cursor-pointer transition-colors ${
-                        !notification.isRead ? "bg-blue-50/50" : ""
-                      }`}
+                      className={`p-4 border-b hover:bg-muted/50 cursor-pointer transition-colors ${!notification.isRead ? "bg-blue-50/50" : ""
+                        }`}
                       onClick={() => markAsRead(notification.id)}
                     >
                       <div className="flex items-start gap-3">
@@ -136,7 +185,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
 
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-xs text-muted-foreground">
-                              {formatTimeAgo(notification.timestamp)}
+                              {formatTimeAgo(notification.createdAt)}
                             </span>
                             <Badge variant="outline" className="text-xs">
                               {notification.type.replace("_", " ")}
