@@ -32,9 +32,16 @@ export default function RosterPage() {
             // If user is SHO, fetch for their police station. Otherwise fetch all or handle scope.
             // For now fetching all beats for the station if available, or just all beats.
             // Filter by user's scope if needed.
-            const beatsRes = await apiClient.getBeats({
-                policeStationId: user?.policeStationId // Filter by user's station if applicable
-            })
+            console.log('Roster Page - User:', user);
+            const queryParams: any = {};
+            if (user?.policeStationId && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+                queryParams.policeStationId = user.policeStationId;
+            }
+            console.log('Fetching beats with params:', queryParams);
+
+            const beatsRes = await apiClient.getBeats(queryParams);
+
+            console.log('Beats Response:', beatsRes);
 
             if (officersRes.success) {
                 // Fix: paginatedQuery returns { items: [], pagination: {} }
