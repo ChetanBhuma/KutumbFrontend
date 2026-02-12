@@ -156,9 +156,7 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
                     const res = await apiClient.getCitizenById(citizenId);
                     const c = res.data.citizen;
 
-                    console.log('DEBUG: Loaded Citizen Data:', c);
-                    console.log('DEBUG: EmergencyContacts:', c.emergencyContacts, c.EmergencyContacts, c.EmergencyContact);
-                    console.log('DEBUG: FamilyMembers:', c.familyMembers, c.FamilyMembers, c.FamilyMember);
+
 
                     setFormData({
                         // Personal
@@ -556,26 +554,26 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
             Object.keys(payload).forEach(key => (payload as any)[key] === undefined && delete (payload as any)[key]);
 
 
-            console.log('Final Payload:', JSON.stringify(payload, null, 2));
+
 
             let finalCitizenId = citizenId; // For edit mode
 
             if (mode === 'create') {
                 // 1. Create Citizen
-                console.log('Step 1: Creating citizen...');
+
                 const res = await apiClient.createCitizen(payload);
                 finalCitizenId = res.data?.citizen?.id;
-                console.log('Citizen created with ID:', finalCitizenId);
+
                 if (!finalCitizenId) throw new Error("Failed to create citizen");
             } else {
                 // 1. Update Citizen
-                console.log('Step 1: Updating citizen...');
+
                 await apiClient.updateCitizen(citizenId!, payload);
-                console.log('Citizen updated with ID:', citizenId);
+
             }
 
             // 2. Upload Files (for both create and edit)
-            console.log('Step 2: Uploading files...');
+
             let newPhotoUrl = '';
             if (photoFile) {
                 try {
@@ -599,7 +597,7 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
             }
 
             // 3. Handle Staff Docs
-            console.log('Step 3: Handling staff documents...');
+
             const finalStaff = [];
             for (let i = 0; i < formData.householdHelp.length; i++) {
                 const staff = formData.householdHelp[i];
@@ -618,7 +616,7 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
             }
 
             // 4. Update Citizen with URLs and Staff (if any files were uploaded)
-            console.log('Step 4: Updating citizen with documents...');
+
             if (newPhotoUrl || newAddrUrl || finalStaff.length > 0) {
                 await apiClient.updateCitizen(finalCitizenId!, {
                     photoUrl: newPhotoUrl || undefined,
@@ -630,7 +628,7 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
             }
 
 
-            console.log('Step 5: Showing success toast and calling onSuccess...');
+
             toast({
                 title: mode === 'create' ? "Citizen Registered Successfully" : "Profile Updated Successfully",
                 description: mode === 'create' ? `Citizen ID: ${finalCitizenId}. Verification request sent to beat officer.` : "Citizen profile has been updated.",
@@ -644,12 +642,8 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
 
 
         } catch (error: any) {
-            console.error('=== SUBMISSION ERROR ===');
-            console.error('Error Object:', error);
+            console.error('Submission error:', error);
             if (error.response) {
-                console.error('Response Status:', error.response.status);
-                console.error('Response Data:', JSON.stringify(error.response.data, null, 2));
-                console.error('Response Headers:', error.response.headers);
 
                 // Extract detailed error message
                 const errorMessage = error.response.data?.message

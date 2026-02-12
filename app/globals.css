@@ -8,37 +8,37 @@
   /* Base Colors - HSL for better compatibility */
   --background: 210 40% 98%; /* #F8FAFC - Very light cool gray */
   --foreground: 222 47% 11%; /* #0F172A - Deep slate */
-  
+
   --card: 0 0% 100%; /* #FFFFFF */
   --card-foreground: 222 47% 11%;
-  
+
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
-  
+
   /* Primary: Deep Royal Blue (Delhi Police Blue) */
   --primary: 221 83% 35%; /* #0F52BA - Richer Blue */
   --primary-foreground: 210 40% 98%;
-  
+
   /* Secondary: Vibrant Red (Delhi Police Red) */
   --secondary: 350 89% 45%; /* #D90E26 - Professional Red */
   --secondary-foreground: 210 40% 98%;
-  
+
   /* Muted & Accents */
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
-  
+
   --accent: 210 40% 96.1%;
   --accent-foreground: 222.2 47.4% 11.2%;
-  
+
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  
+
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 221 83% 35%;
-  
+
   --radius: 0.75rem; /* 12px - More modern rounded corners */
-  
+
   /* Chart Colors */
   --chart-1: 221 83% 35%;
   --chart-2: 350 89% 45%;
@@ -61,32 +61,32 @@
   /* Premium Delhi Police Theme - Dark Mode */
   --background: 222 47% 11%; /* #0F172A - Deep Navy Background */
   --foreground: 210 40% 98%;
-  
+
   --card: 222 47% 11%;
   --card-foreground: 210 40% 98%;
-  
+
   --popover: 222 47% 11%;
   --popover-foreground: 210 40% 98%;
-  
+
   --primary: 217.2 91.2% 59.8%; /* Lighter Blue for Dark Mode */
   --primary-foreground: 222.2 47.4% 11.2%;
-  
+
   --secondary: 350 89% 60%; /* Lighter Red for Dark Mode */
   --secondary-foreground: 210 40% 98%;
-  
+
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-  
+
   --accent: 217.2 32.6% 17.5%;
   --accent-foreground: 210 40% 98%;
-  
+
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
-  
+
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 212.7 26.8% 83.9%;
-  
+
   --chart-1: 220 70% 50%;
   --chart-2: 160 60% 45%;
   --chart-3: 30 80% 55%;
@@ -141,29 +141,29 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
-  
+
   /* Custom Animations */
   --animate-fade-in: fade-in 0.5s ease-out;
   --animate-slide-up: slide-up 0.5s ease-out;
   --animate-float: float 3s ease-in-out infinite;
   --animate-pulse-soft: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  
+
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  
+
   @keyframes slide-up {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
-  
+
   @keyframes float {
     0% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
     100% { transform: translateY(0px); }
   }
-  
+
   @keyframes pulse-soft {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
@@ -185,11 +185,11 @@
   .glass {
     @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-lg;
   }
-  
+
   .glass-dark {
     @apply bg-black/30 backdrop-blur-lg border border-white/10 shadow-lg;
   }
-  
+
   .glass-card {
     @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-sm hover:shadow-md transition-all duration-300;
   }
@@ -198,7 +198,7 @@
   .hover-lift {
     @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg;
   }
-  
+
   .hover-glow {
     @apply transition-all duration-300 hover:shadow-[0_0_20px_rgba(15,82,186,0.3)];
   }
@@ -207,7 +207,7 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
   }
-  
+
   .text-gradient-blue {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500;
   }
@@ -217,12 +217,222 @@
     width: 8px;
     height: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
   }
 }
+
+/* ── High Contrast Mode ── */
+/* Activated by the Accessibility Toolbar "High Contrast" button */
+.high-contrast {
+  /* Base theme overrides */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 5%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 50 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 100% 50%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 85%;
+  --accent: 0 0% 15%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 40%;
+  --input: 0 0% 20%;
+  --ring: 50 100% 50%;
+
+  /* Sidebar variable overrides (critical - these were missing!) */
+  --sidebar: 0 0% 5%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 50 100% 50%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --sidebar-accent: 0 0% 18%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 40%;
+  --sidebar-ring: 50 100% 50%;
+
+  /* Chart overrides */
+  --chart-1: 50 100% 50%;
+  --chart-2: 0 100% 50%;
+  --chart-3: 120 100% 50%;
+  --chart-4: 200 100% 60%;
+  --chart-5: 280 100% 60%;
+}
+
+/* ── Body & Global ── */
+.high-contrast body {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* ── Hardcoded bg-[#001f3f] sidebar headers ── */
+.high-contrast .bg-\[\#001f3f\] {
+  background-color: #000 !important;
+  border-bottom: 2px solid #FFD700 !important;
+}
+
+/* ── Hardcoded white backgrounds ── */
+.high-contrast .bg-white {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+.high-contrast .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.high-contrast .bg-white\/70 {
+  background-color: #111 !important;
+}
+
+/* ── Hardcoded gray text colors ── */
+.high-contrast .text-gray-900,
+.high-contrast .text-gray-800,
+.high-contrast .text-gray-700 {
+  color: #fff !important;
+}
+
+.high-contrast .text-gray-600,
+.high-contrast .text-gray-500 {
+  color: #ddd !important;
+}
+
+.high-contrast .text-gray-400,
+.high-contrast .text-gray-300 {
+  color: #ccc !important;
+}
+
+/* ── Hardcoded gray backgrounds ── */
+.high-contrast .bg-gray-50,
+.high-contrast .bg-gray-100 {
+  background-color: #111 !important;
+}
+
+.high-contrast .bg-gray-200 {
+  background-color: #222 !important;
+}
+
+.high-contrast .border-gray-100,
+.high-contrast .border-gray-200,
+.high-contrast .border-gray-300 {
+  border-color: #444 !important;
+}
+
+/* ── Hardcoded blue colors ── */
+.high-contrast .bg-blue-50,
+.high-contrast .bg-blue-50\/50,
+.high-contrast .bg-blue-100 {
+  background-color: #111 !important;
+}
+
+.high-contrast .text-blue-600,
+.high-contrast .text-blue-700 {
+  color: #FFD700 !important;
+}
+
+.high-contrast .bg-blue-600 {
+  background-color: #FFD700 !important;
+  color: #000 !important;
+}
+
+/* ── Hardcoded green colors ── */
+.high-contrast .text-green-600,
+.high-contrast .text-green-500 {
+  color: #0f0 !important;
+}
+
+.high-contrast .bg-green-500 {
+  background-color: #0f0 !important;
+}
+
+/* ── Hardcoded slate backgrounds (dashboard) ── */
+.high-contrast .bg-slate-50,
+.high-contrast .bg-slate-100 {
+  background-color: #000 !important;
+}
+
+.high-contrast .text-slate-500,
+.high-contrast .text-slate-600,
+.high-contrast .text-slate-700 {
+  color: #ddd !important;
+}
+
+/* ── Cards and backdrop-blur ── */
+.high-contrast .bg-card\/50,
+.high-contrast .bg-card\/80 {
+  background-color: #0a0a0a !important;
+  backdrop-filter: none !important;
+}
+
+.high-contrast .backdrop-blur,
+.high-contrast .backdrop-blur-sm,
+.high-contrast .backdrop-blur-md,
+.high-contrast .backdrop-blur-lg {
+  backdrop-filter: none !important;
+}
+
+/* ── Gradients flattened ── */
+.high-contrast [class*="bg-gradient"] {
+  background-image: none !important;
+  background-color: #111 !important;
+}
+
+/* ── Images ── */
+.high-contrast img {
+  filter: contrast(1.2);
+}
+
+/* ── Focus rings for keyboard nav ── */
+.high-contrast a,
+.high-contrast button {
+  outline-offset: 2px;
+}
+
+.high-contrast a:focus,
+.high-contrast button:focus {
+  outline: 2px solid #FFD700 !important;
+}
+
+/* ── Borders more visible ── */
+.high-contrast .border-b,
+.high-contrast .border-t,
+.high-contrast .border-r,
+.high-contrast .border-l,
+.high-contrast .border {
+  border-color: #444 !important;
+}
+
+/* ── Badge readability ── */
+.high-contrast [class*="badge"],
+.high-contrast .inline-flex[class*="bg-"] {
+  border: 1px solid #666 !important;
+}
+
+/* ── Shadows removed (improves readability) ── */
+.high-contrast .shadow,
+.high-contrast .shadow-sm,
+.high-contrast .shadow-md,
+.high-contrast .shadow-lg,
+.high-contrast .shadow-xl {
+  box-shadow: none !important;
+}
+
+/* ── Ensure text is readable on any remaining colored backgrounds ── */
+.high-contrast .text-white {
+  color: #fff !important;
+}
+
+.high-contrast .text-black {
+  color: #000 !important;
+}
+

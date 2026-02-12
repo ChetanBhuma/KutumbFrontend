@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 
 const getPageInfo = (pathname: string) => {
     // Exact matches
-    if (pathname === '/admin' || pathname === '/admin/dashboard') {
+    if (pathname === '/admin/dashboard') {
         return { title: 'Dashboard Overview', description: 'Monitor key metrics and system status' };
     }
 

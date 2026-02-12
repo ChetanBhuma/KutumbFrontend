@@ -289,12 +289,12 @@ export function logSecurityEvent(event: Omit<SecurityEvent, "id" | "timestamp">)
   }
 
   // In a real implementation, this would send to a security monitoring system
-  console.log("[SECURITY EVENT]", securityEvent)
+
 
   // Check if event should trigger an alert
   if (event.severity === "CRITICAL" || event.type === "SECURITY_VIOLATION") {
     // Trigger immediate alert
-    console.log("[SECURITY ALERT] Critical security event detected:", securityEvent)
+
   }
 }
 
@@ -306,5 +306,5 @@ export function logAuditEvent(event: Omit<AuditLog, "id" | "timestamp">): void {
   }
 
   // In a real implementation, this would be stored in an audit database
-  console.log("[AUDIT LOG]", auditEvent)
+
 }

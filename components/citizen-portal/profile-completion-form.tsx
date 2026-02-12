@@ -354,7 +354,7 @@ export default function ProfileCompletionForm() {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude, accuracy } = position.coords;
-                console.log('GPS:', latitude, longitude, 'Accuracy:', accuracy);
+
 
                 // Store GPS coordinates in formData
                 handleInputChange('gpsLatitude', latitude);
@@ -371,12 +371,11 @@ export default function ProfileCompletionForm() {
                         const feature = findFeatureContainingPoint(latitude, longitude, boundaries);
 
                         if (feature && feature.properties) {
-                            console.log('Found PS Feature Properties:', feature.properties);
+
                             // Property keys from backend/jsongeo/Police Station Boundary.geojson
                             const psName = feature.properties.POL_STN_NM || feature.properties.NAME || feature.properties.Name || feature.properties.name;
-                            console.log('Extracted PS Name:', psName);
-                            console.log('Available Police Stations Master:', masters.policeStations);
-                            console.log('Available Districts Master:', masters.districts);
+
+
 
                             if (psName && masters.policeStations) {
                                 // Clean PS Name (remove 'PS ' prefix if present for better matching)
@@ -389,19 +388,19 @@ export default function ProfileCompletionForm() {
                                     return masterName === targetName || masterName.includes(targetName) || targetName.includes(masterName);
                                 });
 
-                                console.log('Matched PS Object:', matchedPS);
+
 
                                 if (matchedPS) {
-                                    console.log('Setting Police Station ID:', matchedPS.id);
+
                                     handleInputChange('policeStation', matchedPS.id);
 
                                     // Robust District Mapping: Use the districtId from the matched PS directly
                                     if (matchedPS.districtId) {
-                                        console.log('District ID from PS found:', matchedPS.districtId);
+
                                         handleInputChange('district', matchedPS.districtId);
                                     } else {
                                         // Fallback: If districtId missing in PS, try matching by Name from GeoJSON
-                                        console.log('PS has no districtId. Trying fallback by Name from GeoJSON properties...');
+
                                         const distName = feature.properties.DIST_NM || feature.properties.DISTRICT || feature.properties.District;
 
                                         if (distName && masters.districts) {
@@ -411,19 +410,19 @@ export default function ProfileCompletionForm() {
                                             );
 
                                             if (matchedDist) {
-                                                console.log('Fallback District Found by Name:', matchedDist);
+
                                                 handleInputChange('district', matchedDist.id);
                                             } else {
-                                                console.log('Fallback District Name NOT matched in Level-2:', distName);
+
                                             }
                                         } else {
-                                            console.log('No District Name in GeoJSON or Masters missing.');
+
                                         }
                                     }
 
                                     toast({ title: "Location Detected", description: `Jurisdiction: ${matchedPS.name}` });
                                 } else {
-                                    console.log('PS Name found but not in Masters:', psName);
+
                                     // Fallback: If District property exists
                                     const distName = feature.properties.DIST_NM || feature.properties.DISTRICT || feature.properties.District;
                                     if (distName && masters.districts) {
@@ -514,7 +513,7 @@ export default function ProfileCompletionForm() {
     };
 
     const submitProfile = async () => {
-        console.log('DEBUG: submitProfile called');
+
         setSubmitting(true);
         try {
             // Build clean payload with ONLY backend-expected fields (no spread to avoid duplicates)
@@ -612,7 +611,7 @@ export default function ProfileCompletionForm() {
                 }
             });
 
-            console.log('DEBUG: Clean Payload being sent:', JSON.stringify(payload, null, 2));
+
 
             const res = await apiClient.updateMyProfile(payload);
 
@@ -1422,7 +1421,7 @@ export default function ProfileCompletionForm() {
                                 className="w-full h-full object-cover"
                                 mirrored={true}
                                 videoConstraints={{ facingMode: "user" }}
-                                onUserMedia={() => console.log('Webcam access granted')}
+                                onUserMedia={() => { }}
                                 onUserMediaError={(err) => {
                                     console.error('Webcam error:', err);
                                     toast({ title: "Camera Error", description: "Could not access camera. Please check permissions.", variant: "destructive" });

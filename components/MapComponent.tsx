@@ -175,23 +175,22 @@ export default function MapComponent({
         const loadLayer = async (apiMethod: () => Promise<any>, type: string, forceReload = false) => {
             // Check if already loaded (skip if not forcing reload)
             if (!forceReload && loadedLayersRef.current.has(type)) {
-                console.log(`⏭️ Skipping ${type} - already loaded`);
+
                 return;
             }
 
-            console.log(`🔄 Loading ${type} layer...`);
+
 
             try {
                 // Import apiClient dynamically to avoid circular deps if any
                 const { default: apiClient } = await import('@/lib/api-client');
                 const data = await apiMethod();
 
-                console.log(`📦 Received data for ${type}:`, data);
-                console.log(`📊 Data type:`, typeof data, `Features:`, data?.features?.length || 0);
+
 
                 if (data) {
                     const features = map.data.addGeoJson(data);
-                    console.log(`✅ Added ${features.length} features for ${type}`);
+
 
                     features.forEach((feature, index) => {
                         // Check if LAYER_TYPE is already set in properties
@@ -201,18 +200,12 @@ export default function MapComponent({
                         }
 
                         if (index < 3 || type === 'PS_POINT') { // Log first 3 or all PS_POINT
-                            console.log(`🎯 Feature ${index + 1}/${features.length} (${type}):`, {
-                                geometry: feature.getGeometry()?.getType(),
-                                layerType: feature.getProperty('LAYER_TYPE'),
-                                name: feature.getProperty('NAME'),
-                                code: feature.getProperty('CODE'),
-                                district: feature.getProperty('DISTRICT')
-                            });
+                            // Debug logging removed
                         }
                     });
 
                     loadedLayersRef.current.add(type);
-                    console.log(`✅ Successfully loaded ${type} layer with ${features.length} features`);
+
                 } else {
                     console.warn(`⚠️ No data received for ${type}`);
                 }
@@ -227,7 +220,6 @@ export default function MapComponent({
         if (layers.showSubDivisions) loadLayer(async () => (await import('@/lib/api-client')).default.getGeoSubDivisions(), 'SUB_DIVISION');
         if (layers.showPsBoundaries) loadLayer(async () => (await import('@/lib/api-client')).default.getGeoBoundaries(), 'PS_BOUNDARY');
         if (layers.showPsPoints) {
-            console.log('🚨 PS_POINT layer requested, showPsPoints =', layers.showPsPoints);
             loadLayer(async () => (await import('@/lib/api-client')).default.getGeoPoliceStations(), 'PS_POINT');
         }
 
@@ -284,11 +276,6 @@ export default function MapComponent({
                         zIndex: 40
                     };
                 case 'PS_POINT':
-                    console.log('Styling PS_POINT feature:', {
-                        name: feature.getProperty('NAME'),
-                        visible: isVisible,
-                        geometry: feature.getGeometry()?.getType()
-                    });
                     return {
                         icon: {
                             path: google.maps.SymbolPath.CIRCLE,

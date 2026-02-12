@@ -293,7 +293,7 @@ export default function CitizenMapPage() {
                     setLoadingCitizens(false);
                     return;
                 }
-                console.log('❌ Cache MISS:', filterKey);
+
             }
 
             // Measure API call performance
@@ -306,7 +306,7 @@ export default function CitizenMapPage() {
             if (debouncedPS !== 'all') params.policeStationId = debouncedPS;
             if (debouncedBeat !== 'all') params.beatId = debouncedBeat;
 
-            console.log('🔄 Fetching citizens with params:', params);
+
 
             const res = await apiClient.getCitizens(params);
 
@@ -326,7 +326,7 @@ export default function CitizenMapPage() {
                 // Cache the results if enabled
                 if (cacheEnabled && validCitizens.length > 0) {
                     setCachedCitizenData(filterKey, validCitizens);
-                    console.log('💾 Cached citizens:', filterKey, `(${validCitizens.length} items)`);
+
                 }
             } else {
                 throw new Error('Invalid response structure from API');

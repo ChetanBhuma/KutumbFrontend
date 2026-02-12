@@ -106,7 +106,7 @@ export default function CitizenLoginPage() {
             // Mobile number is registered, send OTP
             const response = await apiClient.sendCitizenOTP(mobileNumber);
 
-            console.log('DEBUG: Full API Response:', response); // Debug log
+
 
             // Log OTP in browser console for development testing
             if (response?.data?.devOtp) {

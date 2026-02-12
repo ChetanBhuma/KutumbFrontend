@@ -77,7 +77,6 @@ export default function CitizenDashboard() {
 
                     if (visitsRes.success) {
                         const items = visitsRes.data.items || visitsRes.data.visits || [];
-                        console.log('Dashboard Visits Data:', items);
                         setVisits(items);
                     }
 

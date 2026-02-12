@@ -199,7 +199,7 @@ function RegistrationContent() {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude, accuracy } = position.coords;
-                console.log("GPS Position Acquired:", latitude, longitude, "Accuracy:", accuracy);
+
 
                 setLocationState({
                     lat: latitude,
@@ -211,17 +211,17 @@ function RegistrationContent() {
 
                 // 2. Auto-detect Police Station via Geofence (Robust Logic from Profile Completion)
                 try {
-                    console.log("Fetching boundaries...");
+
                     const boundaries = await apiClient.get('/geo/boundaries');
 
                     if (boundaries && (boundaries as any).features) { // GeoJSON object
                         const feature = findFeatureContainingPoint(latitude, longitude, boundaries as any);
 
                         if (feature && feature.properties) {
-                            console.log('Found PS Feature Properties:', feature.properties);
+
                             // Property keys from backend/jsongeo/Police Station Boundary.geojson
                             const psName = feature.properties.POL_STN_NM || feature.properties.NAME || feature.properties.Name || feature.properties.name;
-                            console.log('Extracted PS Name:', psName);
+
 
                             if (psName && policeStations.length > 0) {
                                 // Clean PS Name (remove 'PS ' prefix if present for better matching)
@@ -235,7 +235,7 @@ function RegistrationContent() {
                                 });
 
                                 if (matchedPS) {
-                                    console.log('Matched PS Object:', matchedPS);
+
                                     setDetailsForm(prev => ({
                                         ...prev,
                                         policeStation: matchedPS.id,
@@ -258,7 +258,7 @@ function RegistrationContent() {
                                     }
                                     toast({ title: "Location Detected", description: `Jurisdiction: ${matchedPS.name}` });
                                 } else {
-                                    console.log('PS Name found but not in Masters:', psName);
+
                                     // Fallback: If District property exists
                                     const distName = feature.properties.DIST_NM || feature.properties.DISTRICT || feature.properties.District;
                                     if (distName && districts.length > 0) {
@@ -303,7 +303,7 @@ function RegistrationContent() {
                     const data = await response.json();
 
                     if (data && data.address) {
-                        console.log("Reverse Geocoding Result:", data);
+
                         setDetailsForm(prev => ({
                             ...prev,
                             addressLine1: [data.address.house_number, data.address.building, data.address.floor].filter(Boolean).join(', ') || prev.addressLine1,
@@ -410,7 +410,7 @@ function RegistrationContent() {
             };
 
             // Log payload for debugging
-            console.log('Submitting payload:', payload);
+
 
             const response = await apiClient.submitCitizenRegistration(registration.id, payload);
 

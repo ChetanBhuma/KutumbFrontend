@@ -165,9 +165,6 @@ export function usePerformance(name: string) {
             performance.measure(name, `${name}-start`, `${name}-end`);
 
             const measure = performance.getEntriesByName(name)[0];
-            if (measure) {
-                console.log(`${name}: ${measure.duration.toFixed(2)}ms`);
-            }
 
             performance.clearMarks(`${name}-start`);
             performance.clearMarks(`${name}-end`);

@@ -22,7 +22,6 @@ class ApiClient {
                 // Allow skipping auth header for specific requests
                 if (config.headers?.skipAuth) {
                     delete config.headers.skipAuth;
-                    console.log('DEBUG: Skipping Auth for', config.url);
                     return config;
                 }
 
@@ -31,7 +30,7 @@ class ApiClient {
                     config.headers.Authorization = `Bearer ${token}`;
                 }
 
-                console.log('DEBUG: Request Headers:', config.url, config.headers);
+
                 return config;
             },
             (error) => Promise.reject(error)
@@ -317,7 +316,7 @@ class ApiClient {
                         // If standard upload, it is folder/file.
 
                         fullUrl = `${this.baseURL}/files/serve/${folder}/${filename}`;
-                        console.log(`[ViewDocument] Converted static URL to API: ${fullUrl}`);
+
                     }
                 }
             } else {
@@ -326,7 +325,7 @@ class ApiClient {
                     : `${window.location.origin}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
             }
 
-            console.log(`[ViewDocument] Fetching securely: ${fullUrl}`);
+
 
             const response = await fetch(fullUrl, {
                 headers: {
@@ -589,7 +588,7 @@ class ApiClient {
 
         // Explicitly store tokens to ensure persistence
         if (result.data && result.data.accessToken) {
-            console.log('DEBUG: Storing registration tokens', result.data);
+
             this.setAccessToken(result.data.accessToken);
             if (result.data.refreshToken) {
                 this.setRefreshToken(result.data.refreshToken);

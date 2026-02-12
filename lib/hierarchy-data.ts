@@ -5,7 +5,6 @@ import { apiClient } from "./api-client";
 export async function fetchHierarchyTree(): Promise<HierarchyNode[]> {
   try {
     const response = await apiClient.get<any>('/hierarchy');
-    console.log('DEBUG: Hierarchy response:', response);
     return response.data;
   } catch (error) {
     console.error("Failed to fetch hierarchy:", error);

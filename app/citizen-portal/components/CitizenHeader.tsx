@@ -78,7 +78,7 @@ export default function CitizenHeader() {
         return (
             <header className="border-b bg-white">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-                    <Link href="/citizen-portal">
+                    <Link href="/">
                         <p className="text-sm uppercase tracking-widest text-blue-600">Delhi Police · Kutumb</p>
                         <h1 className="text-xl font-semibold text-slate-800">Senior Citizen Portal</h1>
                     </Link>
@@ -96,7 +96,7 @@ export default function CitizenHeader() {
         <header className="sticky top-0 z-50 border-b bg-white shadow-sm">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-8">
-                    <Link href="/citizen-portal">
+                    <Link href="/">
                         <div>
                             <p className="text-xs uppercase tracking-widest text-blue-600">Delhi Police</p>
                             <h1 className="text-lg font-bold text-slate-800">Kutumb</h1>

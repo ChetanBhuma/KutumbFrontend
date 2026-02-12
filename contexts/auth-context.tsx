@@ -47,8 +47,6 @@ const mapUserFromResponse = (rawUser: any): User => {
     : []
 
   if (rawUser.permissions) {
-    console.log('[Auth] Raw permissions from API:', rawUser.permissions);
-    console.log('[Auth] Sanitized permissions:', sanitizedRawPermissions);
   }
 
   const permissions = normalizePermissions(sanitizedRawPermissions.length > 0 ? sanitizedRawPermissions : fallbackPermissions)

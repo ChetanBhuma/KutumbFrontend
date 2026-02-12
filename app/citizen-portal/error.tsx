@@ -30,7 +30,7 @@ export default function Error({
                         We encountered an unexpected error while loading this page.
                     </p>
                     <div className="flex justify-center gap-4">
-                        <Button variant="outline" onClick={() => window.location.href = '/citizen-portal'}>
+                        <Button variant="outline" onClick={() => window.location.href = '/'}>
                             Go Home
                         </Button>
                         <Button onClick={() => reset()}>

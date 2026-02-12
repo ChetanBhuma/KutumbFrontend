@@ -162,16 +162,6 @@ export default function GeofenceValidationModal({
     const renderGeofenceCheck = () => {
         if (showCancellation) return null;
 
-        // Debug logging
-        console.log('Geofence Modal State:', {
-            geofenceState,
-            hasOfficerLocation: !!officerLocation,
-            hasCitizenLocation: !!citizenLocation,
-            distance,
-            officerLocation,
-            citizenLocation
-        });
-
         return (
             <div className="flex flex-col space-y-4">
                 {/* Map View - Show when we have citizen location (officer location will load) */}

@@ -35,7 +35,12 @@ export function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    return <LoginForm />
+    // Determine login type based on path or default to admin for protected dashboard routes
+    // Since ProtectedRoute is used for dashboard/admin pages, redirect to admin login
+    if (typeof window !== 'undefined') {
+      window.location.href = '/admin/login?returnUrl=' + encodeURIComponent(window.location.pathname);
+    }
+    return null; // Don't render anything while redirecting
   }
 
   if (excludeRoles && user && excludeRoles.includes(user.role)) {
@@ -63,10 +68,6 @@ export function ProtectedRoute({
   // NEW: Check permission code (dynamic permission system)
   if (permissionCode) {
     const hasPerm = checkPermission(permissionCode); // Changed to checkPermission as per context
-    console.log(`[ProtectedRoute] Checking '${permissionCode}': ${hasPerm}`, {
-      userRole: user?.role,
-      userPermissions: user?.permissions
-    });
 
     if (!hasPerm) {
       return <div className="p-4 text-center text-red-500">Access Denied: Missing permission '{permissionCode}'</div>;

@@ -73,7 +73,7 @@ export function registerServiceWorker() {
             navigator.serviceWorker
                 .register('/sw.js')
                 .then((registration) => {
-                    console.log('Service Worker registered:', registration);
+
 
                     // Check for updates
                     registration.addEventListener('updatefound', () => {
@@ -82,7 +82,7 @@ export function registerServiceWorker() {
                         newWorker?.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                 // New service worker available
-                                console.log('New version available! Refresh to update.');
+
                             }
                         });
                     });
@@ -124,7 +124,7 @@ export async function subscribeToPushNotifications() {
         });
 
         // Send subscription to server
-        console.log('Push subscription:', subscription);
+
 
         return subscription;
     } catch (error) {
