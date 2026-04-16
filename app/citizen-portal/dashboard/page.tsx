@@ -166,17 +166,16 @@ export default function CitizenDashboard() {
                     <Card className="border-none shadow-sm bg-slate-50/50">
                         <CardContent className="p-6 md:p-8">
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-8">
-                                <ServiceButton href="/citizen-portal/visits/request" icon={<Stethoscope />} label="Recall Beat Officer" color="blue" />
+                                <ServiceButton href="/citizen-portal/visits/request" icon={<Stethoscope />} label="Request Visit" color="blue" />
                                 <ServiceButton href="/citizen-portal/visits" icon={<Calendar />} label="My Visits" color="indigo" />
                                 <ServiceButton href="https://lostfound.delhipolice.gov.in/" target="_blank" icon={<FileQuestion />} label="Lost Report" color="orange" />
                                 <ServiceButton href="https://mvt.delhipolice.gov.in/Home.aspx?aspxerrorpath=/welcome.aspx" target="_blank" icon={<Car />} label="MV Theft E-FIR" color="red" />
                                 <ServiceButton href="https://cctns.delhipolice.gov.in/citizenservices/missingpersonregistration.htm" target="_blank" icon={<UserX />} label="Missing Person" color="rose" />
-                                <ServiceButton href="https://missionvatsalya.wcd.gov.in/" target="_blank" icon={<Search />} label="Track Child" color="amber" />
                                 <ServiceButton href="https://zipnet.delhipolice.gov.in/vehiclesmobiles/missingmobiles/" target="_blank" icon={<Smartphone />} label="Stolen Mobile" color="purple" />
                                 <ServiceButton href="https://delhipolice.gov.in/viewfir" target="_blank" icon={<FileText />} label="View FIR" color="cyan" />
                                 <ServiceButton href="https://pcc.delhipolice.gov.in/" target="_blank" icon={<FileCheck />} label="Police Clearance" color="emerald" />
                                 <ServiceButton href="https://cvr.delhipolice.gov.in/" target="_blank" icon={<User />} label="Character Verif." color="teal" />
-                                <ServiceButton href="https://cctns.delhipolice.gov.in/citizenservices/login.htm" target="_blank" icon={<Users />} label="Tenant Reg." color="lime" />
+                                <ServiceButton href="https://cctns.delhipolice.gov.in/citizenservices/login.htm" target="_blank" icon={<Users />} label="Tenant Verificstion" color="lime" />
                                 {/* <ServiceButton href="#" icon={<Shield />} label="Senior Citizen" color="sky" /> */}
                                 <ServiceButton href="https://cctns.delhipolice.gov.in/citizenicms/" target="_blank" icon={<FileEdit />} label="Complaint" color="pink" />
                                 <ServiceButton href="https://delhipolice.gov.in/downloadforms" target="_blank" icon={<Download />} label="Download Forms" color="gray" />
