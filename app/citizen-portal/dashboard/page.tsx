@@ -180,7 +180,7 @@ export default function CitizenDashboard() {
                                 <ServiceButton href="https://cctns.delhipolice.gov.in/citizenicms/" target="_blank" icon={<FileEdit />} label="Complaint" color="pink" />
                                 <ServiceButton href="https://delhipolice.gov.in/downloadforms" target="_blank" icon={<Download />} label="Download Forms" color="gray" />
                                 {/* <ServiceButton href="#" icon={<MessageSquare />} label="Feedback" color="fuchsia" /> */}
-                                <ServiceButton href="/citizen-portal/profile" icon={<User />} label="My Profile" color="violet" />
+                                {/* <ServiceButton href="/citizen-portal/profile" icon={<User />} label="My Profile" color="violet" /> */}
                             </div>
                         </CardContent>
                     </Card>
