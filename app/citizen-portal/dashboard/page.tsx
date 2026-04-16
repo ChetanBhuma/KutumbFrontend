@@ -174,7 +174,7 @@ export default function CitizenDashboard() {
                                 <ServiceButton href="https://zipnet.delhipolice.gov.in/vehiclesmobiles/missingmobiles/" target="_blank" icon={<Smartphone />} label="Stolen Mobile" color="purple" />
                                 <ServiceButton href="https://delhipolice.gov.in/viewfir" target="_blank" icon={<FileText />} label="View FIR" color="cyan" />
                                 <ServiceButton href="https://pcc.delhipolice.gov.in/" target="_blank" icon={<FileCheck />} label="Police Clearance" color="emerald" />
-                                <ServiceButton href="https://cvr.delhipolice.gov.in/" target="_blank" icon={<User />} label="Character Verif." color="teal" />
+                                <ServiceButton href="https://cvr.delhipolice.gov.in/" target="_blank" icon={<User />} label="Character Verification" color="teal" />
                                 <ServiceButton href="https://cctns.delhipolice.gov.in/citizenservices/login.htm" target="_blank" icon={<Users />} label="Tenant Verification" color="lime" />
                                 {/* <ServiceButton href="#" icon={<Shield />} label="Senior Citizen" color="sky" /> */}
                                 <ServiceButton href="https://cctns.delhipolice.gov.in/citizenicms/" target="_blank" icon={<FileEdit />} label="Complaint" color="pink" />
