@@ -4,20 +4,20 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-    Shield, 
-    Users, 
-    Phone, 
-    FileText, 
-    MapPin, 
-    Heart, 
-    CheckCircle2, 
-    ArrowRight, 
-    Star, 
-    Clock, 
-    Award, 
-    TrendingUp, 
-    ChevronLeft, 
+import {
+    Shield,
+    Users,
+    Phone,
+    FileText,
+    MapPin,
+    Heart,
+    CheckCircle2,
+    ArrowRight,
+    Star,
+    Clock,
+    Award,
+    TrendingUp,
+    ChevronLeft,
     ChevronRight,
     Radio,
     Sparkles,
@@ -50,13 +50,13 @@ export default function LandingPage() {
             subtitle: 'A unified digital lifeline connecting elderly residents directly with dedicated Delhi Police Beat Officers for regular doorstep welfare audits and instant emergency assistance.'
         },
         {
-            image: '/cyber-safety-banner.png',
+            image: '/banner_img_2.png',
             tag: 'Cyber Defense',
             title: 'Senior Cyber Safety & Fraud Shield',
             subtitle: 'Proactive protection against digital arrest frauds, fake pension KYC scams, and predatory online threats.'
         },
         {
-            image: '/emergency-sos-banner.png',
+            image: '/banner_img_3.png',
             tag: '24/7 Rapid Response',
             title: 'Instant 1-Touch SOS Emergency Response',
             subtitle: 'Sub-5 minute emergency response with real-time GPS telemetry and instant PCR van dispatch across Delhi.'
@@ -142,8 +142,8 @@ export default function LandingPage() {
                         {/* Navigation Actions */}
                         <nav className="flex items-center gap-3" aria-label="Main Navigation">
                             <Link href="/citizen-portal/login" aria-label="Login to Citizen Portal">
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     className="border-blue-500/50 text-blue-100 bg-blue-950/40 hover:bg-[#0F52BA] hover:text-white transition-all duration-300 shadow"
                                 >
                                     Citizen Login
@@ -165,11 +165,10 @@ export default function LandingPage() {
                 {slides.map((slide, index) => (
                     <div
                         key={index}
-                        className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                            index === activeSlide
-                                ? 'opacity-100 scale-100'
-                                : 'opacity-0 scale-105 pointer-events-none'
-                        }`}
+                        className={`absolute inset-0 transition-all duration-700 ease-in-out ${index === activeSlide
+                            ? 'opacity-100 scale-100'
+                            : 'opacity-0 scale-105 pointer-events-none'
+                            }`}
                     >
                         <img
                             src={slide.image}
@@ -201,11 +200,10 @@ export default function LandingPage() {
                         <button
                             key={index}
                             onClick={() => setActiveSlide(index)}
-                            className={`transition-all duration-300 rounded-full ${
-                                index === activeSlide
-                                    ? 'bg-[#D4AF37] w-7 h-2.5 shadow-lg'
-                                    : 'bg-white/50 hover:bg-white/80 w-2.5 h-2.5'
-                            }`}
+                            className={`transition-all duration-300 rounded-full ${index === activeSlide
+                                ? 'bg-[#D4AF37] w-7 h-2.5 shadow-lg'
+                                : 'bg-white/50 hover:bg-white/80 w-2.5 h-2.5'
+                                }`}
                             aria-label={`Go to slide ${index + 1}`}
                         />
                     ))}
