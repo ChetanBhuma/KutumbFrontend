@@ -287,7 +287,7 @@ export default function LandingPage() {
                             </Button>
                         </Link>
                         <Link href="/citizen-portal/login">
-                            <Button size="lg" variant="outline" className="border-2 border-white/40 text-white hover:bg-white/10 font-bold text-base px-8 py-6 rounded-xl">
+                            <Button size="lg" className="border-2 border-white/60 bg-slate-900/60 hover:bg-white text-white hover:text-slate-950 font-extrabold text-base px-8 py-6 rounded-xl transition-all duration-300 shadow-xl backdrop-blur-sm">
                                 Existing Citizen Login
                             </Button>
                         </Link>
