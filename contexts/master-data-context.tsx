@@ -94,9 +94,9 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
                 setDistrictsLoading(false);
                 return;
             }
-            // Silently ignore 500 errors and set empty data
-            if (err?.response?.status === 500 || err?.code === 'ECONNABORTED' || err?.name === 'AbortError') {
-                console.warn('Master data service unavailable, using empty data');
+            // Silently handle temporary unavailable / rate limit / 500 errors
+            if (err?.response?.status === 500 || err?.response?.status === 429 || err?.code === 'ECONNABORTED' || err?.name === 'AbortError') {
+                console.warn('Master data service busy or unavailable, using empty data');
                 setDistricts([]);
                 setDistrictsLoading(false);
                 return;
@@ -125,9 +125,9 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
                 setPoliceStationsLoading(false);
                 return;
             }
-            // Silently ignore 500 errors and set empty data
-            if (err?.response?.status === 500 || err?.code === 'ECONNABORTED' || err?.name === 'AbortError') {
-                console.warn('Police stations service unavailable, using empty data');
+            // Silently handle temporary unavailable / rate limit / 500 errors
+            if (err?.response?.status === 500 || err?.response?.status === 429 || err?.code === 'ECONNABORTED' || err?.name === 'AbortError') {
+                console.warn('Police stations service busy or unavailable, using empty data');
                 setPoliceStations([]);
                 setPoliceStationsLoading(false);
                 return;
@@ -156,9 +156,9 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
                 setBeatsLoading(false);
                 return;
             }
-            // Silently ignore 500 errors and set empty data
-            if (err?.response?.status === 500 || err?.code === 'ECONNABORTED' || err?.name === 'AbortError') {
-                console.warn('Beats service unavailable, using empty data');
+            // Silently handle temporary unavailable / rate limit / 500 errors
+            if (err?.response?.status === 500 || err?.response?.status === 429 || err?.code === 'ECONNABORTED' || err?.name === 'AbortError') {
+                console.warn('Beats service busy or unavailable, using empty data');
                 setBeats([]);
                 setBeatsLoading(false);
                 return;

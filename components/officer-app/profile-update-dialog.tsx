@@ -47,8 +47,11 @@ export default function ProfileUpdateDialog({ citizen, onUpdate }: ProfileUpdate
 
     useEffect(() => {
         if (open && citizen) {
+            const isStd = ['HOME', 'WORK', 'HOTEL'].includes(citizen.addressType || '');
             setFormData({
                 ...citizen,
+                addressType: isStd ? (citizen.addressType || 'HOME') : (citizen.addressType ? 'Other' : 'HOME'),
+                customAddressType: isStd ? '' : (citizen.addressType || ''),
                 // Normalize Pincode
                 pincode: citizen.pincode || citizen.pinCode || '',
                 // Normalize District/PS
@@ -295,6 +298,8 @@ export default function ProfileUpdateDialog({ citizen, onUpdate }: ProfileUpdate
             delete payload.status;
             // Map pincode back to pinCode if needed by backend, or send both
             payload.pinCode = payload.pincode;
+            payload.addressType = formData.addressType === 'Other' ? (formData.customAddressType?.trim() || 'Other') : (formData.addressType || 'HOME');
+            delete payload.customAddressType;
 
             // Remove relations keys that shouldn't be sent as direct properties if they are redundant
             delete payload.SpouseDetails;
@@ -557,7 +562,41 @@ export default function ProfileUpdateDialog({ citizen, onUpdate }: ProfileUpdate
                                 </RadioGroup>
                             </div>
 
-                            <div className="space-y-2 border-t pt-4">
+                            <div className="space-y-3 border-t pt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                                        <Home className="w-4 h-4 text-blue-600" /> Save Address As
+                                    </Label>
+                                    <Select
+                                        value={formData.addressType || 'HOME'}
+                                        onValueChange={v => updateField('addressType', v)}
+                                    >
+                                        <SelectTrigger className="bg-white border-slate-300">
+                                            <SelectValue placeholder="Select Address Type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="HOME">🏠 HOME</SelectItem>
+                                            <SelectItem value="WORK">💼 WORK</SelectItem>
+                                            <SelectItem value="HOTEL">🏨 HOTEL</SelectItem>
+                                            <SelectItem value="Other">📍 Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {formData.addressType === 'Other' && (
+                                    <div className="space-y-1.5 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <Label className="text-xs font-semibold text-slate-700">Specify Address Type / Name</Label>
+                                        <Input
+                                            value={formData.customAddressType || ''}
+                                            onChange={e => updateField('customAddressType', e.target.value)}
+                                            placeholder="E.g. Farmhouse, Son's Residence, Vacation Home"
+                                            className="bg-white border-slate-300"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
                                 <Label>Address Line 1 (House No, Building)</Label>
                                 <Textarea value={formData.addressLine1 || formData.permanentAddress || ''} onChange={e => updateField('permanentAddress', e.target.value)} />
                             </div>

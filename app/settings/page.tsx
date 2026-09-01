@@ -12,6 +12,7 @@ import { Settings, Shield, Bell, Database, Users, Globe, Loader2 } from "lucide-
 import apiClient from "@/lib/api-client"
 import { useToast } from "@/components/ui/use-toast"
 import { ProtectedRoute } from "@/components/auth/protected-route"
+import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 
 export default function SettingsPage() {
   const { toast } = useToast()
@@ -27,14 +28,31 @@ export default function SettingsPage() {
 
       try {
         setLoading(true)
-        const response = await apiClient.getSettings()
+        const response: any = await apiClient.getSettings()
 
         if (!isMounted) return;
 
-        const settingsMap = response.settings.reduce((acc: any, curr: any) => {
-          acc[curr.key] = curr.value
-          return acc
-        }, {})
+        let settingsMap: Record<string, any> = {};
+        if (response?.data?.map) {
+          settingsMap = response.data.map;
+        } else if (Array.isArray(response?.data?.list)) {
+          settingsMap = response.data.list.reduce((acc: any, curr: any) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {});
+        } else if (Array.isArray(response?.settings)) {
+          settingsMap = response.settings.reduce((acc: any, curr: any) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {});
+        } else if (Array.isArray(response?.data)) {
+          settingsMap = response.data.reduce((acc: any, curr: any) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {});
+        } else if (response && typeof response === 'object') {
+          settingsMap = response.data || response;
+        }
         setSettings(settingsMap)
       } catch (error) {
         console.error('Failed to fetch settings:', error)
@@ -73,26 +91,28 @@ export default function SettingsPage() {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
   return (
-    <ProtectedRoute requiredPermission={{ resource: "system", action: "settings" }}>
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Settings className="h-6 w-6 text-primary" />
+    <ProtectedRoute permissionCode="system.settings">
+      <DashboardLayout
+        title="System Settings"
+        description="Configure system preferences and security settings"
+        currentPath="/settings"
+      >
+        {loading ? (
+          <div className="flex h-[50vh] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">System Settings</h1>
-            <p className="text-muted-foreground">Configure system preferences and security settings</p>
-          </div>
-        </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Settings className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">System Configuration</h1>
+                <p className="text-muted-foreground">Configure system preferences, security, notifications, and defaults</p>
+              </div>
+            </div>
 
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
@@ -360,6 +380,8 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+        )}
+      </DashboardLayout>
     </ProtectedRoute>
   )
 }

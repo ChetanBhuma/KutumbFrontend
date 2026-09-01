@@ -167,6 +167,11 @@ export default function CitizenDetailPage() {
                                 <InfoRow icon={Phone} label="Alternate" value={citizen.alternateMobile} />
                                 <InfoRow icon={Phone} label="WhatsApp" value={citizen.whatsappNumber} />
                                 <InfoRow icon={Mail} label="Email" value={citizen.email} />
+                                <InfoRow
+                                    icon={Home}
+                                    label="Saved Address As"
+                                    value={citizen.addressType === 'HOME' ? '🏠 HOME' : citizen.addressType === 'WORK' ? '💼 WORK' : citizen.addressType === 'HOTEL' ? '🏨 HOTEL' : (citizen.addressType ? `📍 ${citizen.addressType}` : '🏠 HOME')}
+                                />
                                 <InfoRow icon={MapPin} label="Permanent Address" value={citizen.permanentAddress} sub={`${citizen.city || ''} ${citizen.pincode || ''}`} />
                                 <InfoRow icon={MapPin} label="Present Address" value={citizen.presentAddress} />
                                 <InfoRow icon={MapPin} label="Jurisdiction" value={citizen.PoliceStation?.name} sub={citizen.District?.name} />

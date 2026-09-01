@@ -168,7 +168,7 @@ export function CreateUserDialog({ open, onOpenChange, roles, onCreated }: Creat
     // Validate Officer Fields
     if (showOfficerFields) {
       if (!officerData.fullName || !officerData.badgeNumber) {
-        setError("Officer Name and Badge Number are required for this role.");
+        setError("Officer Name and PIS Number are required for this role.");
         return;
       }
 

@@ -207,8 +207,15 @@ export default function CitizenProfilePage() {
                                         <span className="font-medium">{citizen.mobileNumber}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                        <MapPin className="h-4 w-4 text-primary" />
-                                        <span className="truncate">{citizen.permanentAddress || 'Address not listed'}</span>
+                                        <MapPin className="h-4 w-4 text-primary shrink-0" />
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            {citizen.addressType && (
+                                                <span className="shrink-0 px-2 py-0.5 text-[11px] font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                                    {citizen.addressType === 'HOME' ? '🏠 HOME' : citizen.addressType === 'WORK' ? '💼 WORK' : citizen.addressType === 'HOTEL' ? '🏨 HOTEL' : `📍 ${citizen.addressType}`}
+                                                </span>
+                                            )}
+                                            <span className="truncate">{citizen.permanentAddress || 'Address not listed'}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -324,6 +331,11 @@ export default function CitizenProfilePage() {
                                         <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" /> Address Information</CardTitle>
                                     </CardHeader>
                                     <CardContent className="grid md:grid-cols-1 gap-4 pt-6">
+                                        <InfoItem
+                                            icon={Home}
+                                            label="Saved Address As"
+                                            value={citizen.addressType === 'HOME' ? '🏠 HOME' : citizen.addressType === 'WORK' ? '💼 WORK' : citizen.addressType === 'HOTEL' ? '🏨 HOTEL' : (citizen.addressType ? `📍 ${citizen.addressType}` : '🏠 HOME')}
+                                        />
                                         <InfoItem icon={MapPin} label="Address Line 1" value={citizen.addressLine1} />
                                         <InfoItem icon={MapPin} label="Address Line 2" value={citizen.addressLine2} />
                                         <InfoItem icon={MapPin} label="Permanent Address" value={citizen.permanentAddress} />

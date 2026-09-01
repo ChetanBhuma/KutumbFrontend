@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { normalizeMobileNumber } from "@/lib/utils";
-import { MapPin, Upload, X, Eye } from 'lucide-react';
+import { MapPin, Upload, X, Eye, Home } from 'lucide-react';
 import { findFeatureContainingPoint, findNearestPoliceStation } from '@/lib/delhi-police-geofence';
 
 type Step = 'start' | 'otp' | 'details';
@@ -42,13 +42,15 @@ function RegistrationContent() {
     const [startForm, setStartForm] = useState({
         mobileNumber: '',
         fullName: '',
-        dateOfBirth: ''
+        dateOfBirth: '1960-01-01'
     });
     const [showDisclaimer, setShowDisclaimer] = useState(false);
 
     // Step 3: Details State
     const [detailsForm, setDetailsForm] = useState({
         residingWith: 'Alone',
+        addressType: 'HOME',
+        customAddressType: '',
         addressLine1: '',
         addressLine2: '',
         pincode: '',
@@ -389,6 +391,9 @@ function RegistrationContent() {
 
                 addressLine1: detailsForm.addressLine1,
                 addressLine2: detailsForm.addressLine2,
+                addressType: detailsForm.addressType === 'Other' ? (detailsForm.customAddressType.trim() || 'Other') : detailsForm.addressType,
+                city: detailsForm.city || 'Delhi',
+                state: 'Delhi',
 
                 districtId: detailsForm.district,
                 policeStationId: detailsForm.policeStation,
@@ -642,6 +647,42 @@ function RegistrationContent() {
                                     <span className="text-slate-400 ml-2">(Accuracy: {locationState.accuracy?.toFixed(0)}m)</span>
                                 </div>
                             )}
+
+                            {/* Save Address As Dropdown */}
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                                        <Home className="w-4 h-4 text-blue-600" /> Save Address As <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Select
+                                        value={detailsForm.addressType}
+                                        onValueChange={(val) => setDetailsForm(prev => ({ ...prev, addressType: val }))}
+                                    >
+                                        <SelectTrigger className="bg-white border-slate-300">
+                                            <SelectValue placeholder="Select Address Type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="HOME">🏠 HOME</SelectItem>
+                                            <SelectItem value="WORK">💼 WORK</SelectItem>
+                                            <SelectItem value="HOTEL">🏨 HOTEL</SelectItem>
+                                            <SelectItem value="Other">📍 Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {detailsForm.addressType === 'Other' && (
+                                    <div className="space-y-1.5 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <Label className="text-xs font-semibold text-slate-700">Specify Address Type / Name <span className="text-red-500">*</span></Label>
+                                        <Input
+                                            value={detailsForm.customAddressType}
+                                            onChange={(e) => setDetailsForm(prev => ({ ...prev, customAddressType: e.target.value }))}
+                                            placeholder="E.g. Farmhouse, Son's Residence, Vacation Home"
+                                            className="bg-white border-slate-300"
+                                            required={detailsForm.addressType === 'Other'}
+                                        />
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">

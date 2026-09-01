@@ -16,8 +16,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, Clock, CheckCircle2, AlertCircle, XCircle, Timer } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, AlertCircle, XCircle, Timer, Pencil, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 interface CitizenOption {
   id: string;
@@ -47,11 +48,14 @@ interface Visit {
 export default function ScheduleVisitPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const citizenIdParam = searchParams.get('citizenId');
+  const visitIdParam = searchParams.get('visitId');
 
   const { user, isLoading } = useAuth();
 
   const [loading, setLoading] = useState(false);
+  const [loadingVisit, setLoadingVisit] = useState(false);
   const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
@@ -61,6 +65,45 @@ export default function ScheduleVisitPage() {
     visitType: 'Routine',
     notes: '',
   });
+
+  // Load existing visit details if visitId is provided in URL
+  useEffect(() => {
+    if (visitIdParam) {
+      setLoadingVisit(true);
+      setError('');
+      apiClient.getVisitById(visitIdParam)
+        .then((res: any) => {
+          const visit = res.data?.visit || res.data || res;
+          if (visit) {
+            let formattedDate = '';
+            if (visit.scheduledDate) {
+              const d = new Date(visit.scheduledDate);
+              if (!isNaN(d.getTime())) {
+                formattedDate = format(d, "yyyy-MM-dd'T'HH:mm");
+              }
+            }
+            setFormData({
+              seniorCitizenId: visit.seniorCitizenId || visit.SeniorCitizen?.id || '',
+              officerId: visit.officerId || visit.officer?.id || '',
+              scheduledDate: formattedDate,
+              visitType: visit.visitType || 'Routine',
+              notes: visit.notes || '',
+            });
+          }
+        })
+        .catch((err: any) => {
+          console.error("Failed to load visit details for editing", err);
+          const errorMsg = err.response?.data?.message || 'Could not load visit details.';
+          setError(errorMsg);
+          toast({
+            title: "Error Loading Visit",
+            description: errorMsg,
+            variant: "destructive"
+          });
+        })
+        .finally(() => setLoadingVisit(false));
+    }
+  }, [visitIdParam]);
 
   const fetchCitizens = useCallback(() => apiClient.getCitizens({ limit: 100 }), []);
 
@@ -75,40 +118,28 @@ export default function ScheduleVisitPage() {
   }, []);
 
   const fetchVisits = useCallback(() => {
-    if (!formData.seniorCitizenId) return Promise.resolve({ data: { items: [] } }); // Return items: [] to match expected struct
+    if (!formData.seniorCitizenId) return Promise.resolve({ data: { items: [] } });
     return apiClient.getVisits({ citizenId: formData.seniorCitizenId, limit: 20 });
   }, [formData.seniorCitizenId]);
 
-  // CitizenController: returns { data: { citizens: [...] } }
-  // useApiQuery unwraps 'data', so we get { citizens: [...] }
-  // CitizenController: returns { data: { citizens: [...] } }
-  // useApiQuery unwraps 'data', so we get { citizens: [...] }
   const { data: citizensData } = useApiQuery<{ citizens: CitizenOption[] }>(fetchCitizens, {
     refetchOnMount: true,
     enabled: !!user && user.role !== 'CITIZEN'
   });
 
-  // OfficerController: returns { data: { items: [...] } }
-  // Our fetchOfficers returns { data: [...] } (we manually unwrapped items)
-  // useApiQuery unwraps 'data', so we get [...] (array)
   const { data: officersData } = useApiQuery<OfficerOption[]>(fetchOfficers, {
     refetchOnMount: true,
     enabled: !!user && user.role !== 'CITIZEN'
   });
 
-  // VisitController: returns { data: { items: [...] } }
-  // useApiQuery unwraps 'data', so we get { items: [...] }
   const { data: visitsData, loading: visitsLoading, refetch: refetchVisits } = useApiQuery<{ items: Visit[] }>(fetchVisits, {
     refetchOnMount: true,
     enabled: !!formData.seniorCitizenId
   });
 
-  // Correctly map based on controller response structure
   const citizens = citizensData?.citizens || [];
   const officers = officersData || [];
   const visits = visitsData?.items || [];
-
-
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -119,8 +150,30 @@ export default function ScheduleVisitPage() {
     try {
       setLoading(true);
       setError('');
+
+      if (visitIdParam) {
+        // Update existing visit
+        await apiClient.updateVisit(visitIdParam, {
+          seniorCitizenId: formData.seniorCitizenId,
+          officerId: formData.officerId,
+          scheduledDate: new Date(formData.scheduledDate).toISOString(),
+          visitType: formData.visitType,
+          notes: formData.notes
+        });
+        toast({
+          title: "Visit Updated",
+          description: "The visit has been updated successfully."
+        });
+        router.push('/visits');
+        return;
+      }
+
+      // Create new visit
       await apiClient.createVisit(formData);
-      // Refresh visits and clear form (except citizen if selected)
+      toast({
+        title: "Visit Scheduled",
+        description: "New visit scheduled successfully."
+      });
       refetchVisits();
       setFormData(prev => ({
         ...prev,
@@ -130,7 +183,13 @@ export default function ScheduleVisitPage() {
       }));
     } catch (err: any) {
       console.error('Failed to schedule visit', err);
-      setError(err.response?.data?.message || 'Unable to schedule visit');
+      const msg = err.response?.data?.message || 'Unable to schedule visit';
+      setError(msg);
+      toast({
+        title: visitIdParam ? "Update Failed" : "Scheduling Failed",
+        description: msg,
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -177,94 +236,135 @@ export default function ScheduleVisitPage() {
           <div className="lg:col-span-4 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>New Visit</CardTitle>
-                <CardDescription>Schedule a new engagement</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      {visitIdParam ? (
+                        <>
+                          <Pencil className="h-5 w-5 text-blue-600" /> Edit Visit
+                        </>
+                      ) : (
+                        'New Visit'
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      {visitIdParam ? 'Update scheduled visit details and assignment' : 'Schedule a new engagement'}
+                    </CardDescription>
+                  </div>
+                  {visitIdParam && (
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                      Editing Mode
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                {error && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+                {loadingVisit ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-muted-foreground gap-2">
+                    <Timer className="h-6 w-6 animate-spin text-primary" />
+                    <p className="text-sm">Loading visit details...</p>
+                  </div>
+                ) : (
+                  <>
+                    {error && (
+                      <Alert variant="destructive" className="mb-4">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Senior Citizen</Label>
+                        <Select
+                          value={formData.seniorCitizenId}
+                          onValueChange={(val) => setFormData((prev) => ({ ...prev, seniorCitizenId: val }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select citizen" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {citizens.map((citizen) => (
+                              <SelectItem key={citizen.id} value={citizen.id}>
+                                {citizen.fullName} · {citizen.mobileNumber}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Assigned Officer</Label>
+                        <Select
+                          value={formData.officerId}
+                          onValueChange={(val) => setFormData((prev) => ({ ...prev, officerId: val }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select officer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {officers.map((officer) => (
+                              <SelectItem key={officer.id} value={officer.id}>
+                                {officer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Date & Time</Label>
+                        <Input
+                          type="datetime-local"
+                          value={formData.scheduledDate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, scheduledDate: e.target.value }))}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Visit Type</Label>
+                        <Select
+                          value={formData.visitType}
+                          onValueChange={(val) => setFormData((prev) => ({ ...prev, visitType: val as any }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Routine">Routine</SelectItem>
+                            <SelectItem value="Follow-up">Follow-up</SelectItem>
+                            <SelectItem value="Verification">Verification</SelectItem>
+                            <SelectItem value="Emergency">Emergency</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Notes</Label>
+                        <Textarea
+                          value={formData.notes}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                          placeholder="Add any specific instructions..."
+                          className="h-24"
+                        />
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        {visitIdParam && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-1/3"
+                            onClick={() => router.push('/visits')}
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-1" /> Cancel
+                          </Button>
+                        )}
+                        <Button type="submit" className={visitIdParam ? "w-2/3" : "w-full"} disabled={loading}>
+                          {loading ? (visitIdParam ? 'Updating...' : 'Scheduling...') : (visitIdParam ? 'Update Visit' : 'Schedule Visit')}
+                        </Button>
+                      </div>
+                    </form>
+                  </>
                 )}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Senior Citizen</Label>
-                    <Select
-                      value={formData.seniorCitizenId}
-                      onValueChange={(val) => setFormData((prev) => ({ ...prev, seniorCitizenId: val }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select citizen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {citizens.map((citizen) => (
-                          <SelectItem key={citizen.id} value={citizen.id}>
-                            {citizen.fullName} · {citizen.mobileNumber}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Assigned Officer</Label>
-                    <Select
-                      value={formData.officerId}
-                      onValueChange={(val) => setFormData((prev) => ({ ...prev, officerId: val }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select officer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {officers.map((officer) => (
-                          <SelectItem key={officer.id} value={officer.id}>
-                            {officer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Date & Time</Label>
-                    <Input
-                      type="datetime-local"
-                      value={formData.scheduledDate}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, scheduledDate: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Visit Type</Label>
-                    <Select
-                      value={formData.visitType}
-                      onValueChange={(val) => setFormData((prev) => ({ ...prev, visitType: val as any }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Routine">Routine</SelectItem>
-                        <SelectItem value="Follow-up">Follow-up</SelectItem>
-                        <SelectItem value="Emergency">Emergency</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Notes</Label>
-                    <Textarea
-                      value={formData.notes}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Add any specific instructions..."
-                      className="h-24"
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Scheduling...' : 'Schedule Visit'}
-                  </Button>
-                </form>
               </CardContent>
             </Card>
           </div>

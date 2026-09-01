@@ -516,12 +516,17 @@ export default function CitizenDetailPage() {
                                             <InfoItem icon={UserCheck} label="Specialization" value={citizen.specialization} />
                                             <InfoItem icon={Smartphone} label="WhatsApp Number" value={citizen.whatsappNumber} />
                                             <div className="sm:col-span-2 lg:col-span-3 border-t border-dashed my-2" />
+                                            <InfoItem
+                                                icon={Home}
+                                                label="Saved Address As"
+                                                value={citizen.addressType === 'HOME' ? '🏠 HOME' : citizen.addressType === 'WORK' ? '💼 WORK' : citizen.addressType === 'HOTEL' ? '🏨 HOTEL' : (citizen.addressType ? `📍 ${citizen.addressType}` : '🏠 HOME')}
+                                            />
                                             <InfoItem icon={MapPin} label="Address Line 1" value={citizen.addressLine1} />
                                             <InfoItem icon={MapPin} label="Address Line 2" value={citizen.addressLine2} />
-                                            <InfoItem icon={MapPin} label="City" value={citizen.city} />
+                                            <InfoItem icon={MapPin} label="City" value={citizen.city || 'Delhi'} />
                                             <InfoItem icon={MapPin} label="District" value={citizen.District?.name || citizen.district?.name || citizen.districtName || districts.find((d: any) => d.id === citizen.districtId)?.name} />
                                             <InfoItem icon={Shield} label="Police Station" value={citizen.PoliceStation?.name || citizen.policeStation?.name || citizen.policeStationName || stations.find((s: any) => s.id === citizen.policeStationId)?.name} />
-                                            <InfoItem icon={MapPin} label="State" value={citizen.state} />
+                                            <InfoItem icon={MapPin} label="State" value={citizen.state || 'Delhi'} />
                                             <InfoItem icon={MapPin} label="PIN Code" value={citizen.pinCode} />
                                             <InfoItem icon={Phone} label="Telephone/Landline" value={citizen.telephoneNumber} />
                                             <div className="sm:col-span-2 lg:col-span-3 border-t border-dashed my-2" />

@@ -103,7 +103,10 @@ export default function VisitRequestQueuePage() {
         }
     };
 
-    const openScheduleDialog = (request: VisitRequest) => {
+    const [stationOfficers, setStationOfficers] = useState<OfficerOption[]>([]);
+    const [loadingStationOfficers, setLoadingStationOfficers] = useState(false);
+
+    const openScheduleDialog = async (request: VisitRequest) => {
         if (!request.seniorCitizen) {
             setError('Citizen record must exist before scheduling.');
             return;
@@ -116,6 +119,25 @@ export default function VisitRequestQueuePage() {
             notes: request.notes || ''
         });
         setError('');
+
+        // Fetch officers specific to this citizen's police station
+        try {
+            setLoadingStationOfficers(true);
+            const params: any = { limit: 100, isActive: true };
+            if (request.seniorCitizen?.policeStationId) {
+                params.policeStationId = request.seniorCitizen.policeStationId;
+            }
+            const res: any = await apiClient.get('/officers', { params });
+            if (res.success) {
+                setStationOfficers(res.data?.officers || res.data?.data || []);
+            } else {
+                setStationOfficers(officers);
+            }
+        } catch {
+            setStationOfficers(officers);
+        } finally {
+            setLoadingStationOfficers(false);
+        }
     };
 
     const scheduleVisit = async () => {
@@ -286,11 +308,17 @@ export default function VisitRequestQueuePage() {
                                         <SelectValue placeholder="Select officer" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60">
-                                        {officers.map((officer) => (
-                                            <SelectItem key={officer.id} value={officer.id}>
-                                                {officer.name} {officer.rank ? `· ${officer.rank}` : ''}
-                                            </SelectItem>
-                                        ))}
+                                        {loadingStationOfficers ? (
+                                            <div className="p-2 text-center text-xs text-muted-foreground">Loading station officers...</div>
+                                        ) : stationOfficers.length === 0 ? (
+                                            <div className="p-2 text-center text-xs text-muted-foreground">No active officers in this police station</div>
+                                        ) : (
+                                            stationOfficers.map((officer) => (
+                                                <SelectItem key={officer.id} value={officer.id}>
+                                                    {officer.name} {officer.rank ? `· ${officer.rank}` : ''}
+                                                </SelectItem>
+                                            ))
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -314,6 +342,7 @@ export default function VisitRequestQueuePage() {
                                     <SelectContent>
                                         <SelectItem value="Routine">Routine</SelectItem>
                                         <SelectItem value="Follow-up">Follow-up</SelectItem>
+                                        <SelectItem value="Verification">Verification</SelectItem>
                                         <SelectItem value="Emergency">Emergency</SelectItem>
                                     </SelectContent>
                                 </Select>

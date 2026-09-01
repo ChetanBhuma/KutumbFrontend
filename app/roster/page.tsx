@@ -15,6 +15,7 @@ export default function RosterPage() {
 
     const [officers, setOfficers] = useState<BeatOfficer[]>([])
     const [beats, setBeats] = useState<any[]>([])
+    const [totalCitizens, setTotalCitizens] = useState<number>(0)
     const [loading, setLoading] = useState(true)
 
     // Fetch initial data
@@ -25,27 +26,23 @@ export default function RosterPage() {
             setLoading(true)
 
             // Fetch Officers
-            // Note: Assuming getOfficers supports filtering or returns all active ones
             const officersRes = await apiClient.getOfficers({ limit: 1000, isActive: true })
 
             // Fetch Beats
-            // If user is SHO, fetch for their police station. Otherwise fetch all or handle scope.
-            // For now fetching all beats for the station if available, or just all beats.
-            // Filter by user's scope if needed.
             const queryParams: any = {};
             if (user?.policeStationId && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
                 queryParams.policeStationId = user.policeStationId;
             }
 
-
             const beatsRes = await apiClient.getBeats(queryParams);
 
-
+            // Fetch Dashboard Stats for jurisdiction citizen count
+            const statsRes = await apiClient.getDashboardStats();
+            if (statsRes.success && statsRes.data?.citizens?.total !== undefined) {
+                setTotalCitizens(statsRes.data.citizens.total);
+            }
 
             if (officersRes.success) {
-                // Fix: paginatedQuery returns { items: [], pagination: {} }
-                // Access .items from the data object
-                // @ts-ignore - Backend types might not perfectly match paginated response structure yet
                 const officerList = officersRes.data.items || officersRes.data.data || []
                 setOfficers(officerList)
             }
@@ -124,6 +121,7 @@ export default function RosterPage() {
                     <OfficerBoard
                         officers={officers}
                         beats={beats}
+                        totalCitizensCount={totalCitizens}
                         onOfficerClick={() => { }}
                         onOfficerMove={handleOfficerMove}
                     />

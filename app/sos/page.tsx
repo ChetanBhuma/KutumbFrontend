@@ -10,9 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Header } from "@/components/dashboard/header";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function SOSMonitoringPage() {
     const router = useRouter();
+    const { toast } = useToast();
 
     const fetchAlerts = useCallback(() => apiClient.getActiveAlerts(), []);
     const { data: alertsData, loading, refetch } = useApiQuery(fetchAlerts, { refetchOnMount: true });
@@ -29,9 +31,16 @@ export default function SOSMonitoringPage() {
         try {
             await apiClient.updateSOSStatus(id, 'Responded', 'Officer responding');
             refetch();
-            alert('Alert marked as responded');
-        } catch (error) {
-            alert('Failed to update alert status');
+            toast({
+                title: 'Success',
+                description: 'Alert marked as responded'
+            });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error?.message || 'Failed to update alert status'
+            });
         }
     };
 
@@ -39,9 +48,16 @@ export default function SOSMonitoringPage() {
         try {
             await apiClient.updateSOSStatus(id, 'Resolved', 'Alert resolved');
             refetch();
-            alert('Alert resolved');
-        } catch (error) {
-            alert('Failed to resolve alert');
+            toast({
+                title: 'Success',
+                description: 'Alert resolved successfully'
+            });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error?.message || 'Failed to resolve alert'
+            });
         }
     };
 

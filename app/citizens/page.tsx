@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ExportButton } from '@/components/ui/export-button';
 
 interface Citizen {
   id: string;
@@ -30,8 +31,6 @@ interface Citizen {
   idVerificationStatus: string;
   createdAt: string;
 }
-
-import { ExportButton } from '@/components/ui/export-button';
 
 export default function CitizensPage() {
   const router = useRouter();

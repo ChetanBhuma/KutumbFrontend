@@ -156,7 +156,7 @@ export default function OfficersPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Badge Number</TableHead>
+                            <TableHead>PIS no</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Rank</TableHead>
                             <TableHead>Contact</TableHead>
@@ -272,7 +272,7 @@ export default function OfficersPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                         <Input
-                            placeholder="Search by name, badge, phone..."
+                            placeholder="Search by name, PIS no, phone..."
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);

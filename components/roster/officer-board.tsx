@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 interface OfficerBoardProps {
     officers: BeatOfficer[]
     beats: any[]
+    totalCitizensCount?: number
     onOfficerClick: (officer: BeatOfficer) => void
     onOfficerMove: (officerId: string, toBeatId: string | null) => void
 }
@@ -119,7 +120,7 @@ function BoardDropZone({
 }) {
     return (
         <div
-            className="flex-1 min-h-[100px] transition-all rounded-b-xl"
+            className="min-h-full transition-all rounded-b-xl"
             onDragOver={(e) => {
                 e.preventDefault()
                 e.currentTarget.classList.add('bg-blue-50/50')
@@ -134,7 +135,7 @@ function BoardDropZone({
                 if (officerId) onDrop(officerId)
             }}
         >
-            <div className="flex flex-col p-2 pb-20">
+            <div className="flex flex-col p-3 pb-8">
                 {column.items.map((officer) => (
                     <OfficerCard key={officer.id} officer={officer} onClick={() => { }} />
                 ))}
@@ -149,42 +150,49 @@ function BoardDropZone({
     )
 }
 
-export function OfficerBoard({ officers, beats, onOfficerClick, onOfficerMove }: OfficerBoardProps) {
-    // 1. Unassigned Column
-    const unassignedOfficers = officers.filter(o => !o.beatId)
+export function OfficerBoard({ officers, beats, totalCitizensCount, onOfficerClick, onOfficerMove }: OfficerBoardProps) {
+    // Collect valid station beat IDs
+    const stationBeatIds = new Set(beats.map(b => b.id));
 
-    // 2. Beat Columns
-    const beatColumns: BoardColumn[] = beats.map(beat => ({
-        id: beat.id,
-        title: beat.name,
-        subtitle: beat.exactLocation || "No location set",
-        beatId: beat.id,
-        items: officers.filter(o => o.beatId === beat.id),
-        stats: {
-            officerCount: beat.officerCount || 0, // Backend might need to send this or we calculate
-            citizenCount: beat.citizenCount || 0
-        }
-    }))
+    // 1. Unassigned Column (officers with no beatId or with an unmapped beatId)
+    const unassignedOfficers = officers.filter(o => !o.beatId || !stationBeatIds.has(o.beatId));
+
+    // 2. Beat Columns (officers mapped to each beat in this police station)
+    const beatColumns: BoardColumn[] = beats.map(beat => {
+        const beatOfficers = officers.filter(o => o.beatId === beat.id);
+        return {
+            id: beat.id,
+            title: beat.name,
+            subtitle: beat.exactLocation || "Station Beat Zone",
+            beatId: beat.id,
+            items: beatOfficers,
+            stats: {
+                officerCount: beatOfficers.length,
+                citizenCount: beat.citizenCount || 0
+            }
+        };
+    });
 
     const columns = [
         {
             id: 'unassigned',
-            title: 'Unassigned',
-            subtitle: 'Officers pending assignment',
+            title: 'Unassigned Officers',
+            subtitle: 'Officers pending beat assignment',
             items: unassignedOfficers,
             stats: { officerCount: unassignedOfficers.length, citizenCount: 0 }
         },
         ...beatColumns
-    ]
+    ];
 
     // Calculate Stats for Top Bar
-    const totalOfficers = officers.length
-    const totalAssigned = officers.filter(o => o.beatId).length
-    const totalUnassigned = unassignedOfficers.length
-    const totalCitizens = officers.reduce((acc, curr) => acc + (curr.assignedCitizens || 0), 0) // Approximation if backend doesn't send total
+    const totalOfficers = officers.length;
+    const totalAssigned = officers.filter(o => o.beatId && stationBeatIds.has(o.beatId)).length;
+    const totalUnassigned = unassignedOfficers.length;
+    const beatsCitizensTotal = beats.reduce((acc, curr) => acc + (curr.citizenCount || 0), 0);
+    const totalCitizens = totalCitizensCount !== undefined && totalCitizensCount > 0 ? totalCitizensCount : beatsCitizensTotal;
 
     return (
-        <div className="flex flex-col gap-6 h-full font-sans bg-slate-50/50 p-1">
+        <div className="flex flex-col gap-5 h-full font-sans bg-slate-50/50 p-1">
 
             {/* 1. Stats Overview Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -219,26 +227,26 @@ export function OfficerBoard({ officers, beats, onOfficerClick, onOfficerMove }:
             </div>
 
             {/* 2. Board Grid - CSS Grid for horizontal layout with sticky first column */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
-                <div className="flex gap-4 min-w-max h-full items-start relative pl-1">
+            <div className="flex-1 overflow-x-auto pb-4">
+                <div className="flex gap-4 min-w-max items-start relative pl-1">
                     {/* Render Columns */}
-                    {columns.map((col, index) => (
+                    {columns.map((col) => (
                         <div
                             key={col.id}
                             className={cn(
-                                "w-[320px] flex-shrink-0 flex flex-col h-full",
+                                "w-[330px] flex-shrink-0 flex flex-col h-[calc(100vh-270px)] min-h-[480px] max-h-[750px]",
                                 // Sticky implementation for first column ('unassigned')
                                 col.id === 'unassigned' && "sticky left-0 z-20"
                             )}
                         >
                             <Card className={cn(
-                                "flex flex-col h-full max-h-[calc(100vh-210px)] overflow-hidden shadow-sm border-0 ring-1 ring-slate-200",
+                                "flex flex-col h-full overflow-hidden shadow-sm border-0 ring-1 ring-slate-200",
                                 // Added bg-white specifically to fix transparency when sticky
                                 col.id === 'unassigned' ? "bg-white ring-orange-200 shadow-xl" : "bg-white"
                             )}>
                                 <CardHeader className={cn(
-                                    "py-3 px-4 border-b border-slate-100 sticky top-0 z-10",
-                                    col.id === 'unassigned' ? "bg-orange-50/30" : "bg-white"
+                                    "py-3 px-4 border-b border-slate-100 flex-shrink-0",
+                                    col.id === 'unassigned' ? "bg-orange-50/40" : "bg-slate-50/40"
                                 )}>
                                     <div className="flex items-start justify-between">
                                         <div>
@@ -246,21 +254,21 @@ export function OfficerBoard({ officers, beats, onOfficerClick, onOfficerMove }:
                                                 {col.title}
                                             </CardTitle>
                                             {col.subtitle && (
-                                                <p className="text-[11px] text-slate-400 mt-1 font-medium truncate max-w-[180px]">
+                                                <p className="text-[11px] text-slate-400 mt-1 font-medium truncate max-w-[200px]">
                                                     {col.subtitle}
                                                 </p>
                                             )}
                                         </div>
                                         <Badge variant={col.items.length > 0 ? "default" : "secondary"}
                                             className={cn(
-                                                "ml-2 h-6 px-2 text-xs font-mono rounded-md",
+                                                "ml-2 h-6 px-2 text-xs font-mono rounded-md shrink-0",
                                                 col.id === 'unassigned' ? "bg-orange-100 text-orange-700 hover:bg-orange-100" : "bg-slate-100 text-slate-700 hover:bg-slate-100"
                                             )}>
-                                            {col.items.length}
+                                            {col.items.length} {col.items.length === 1 ? 'Officer' : 'Officers'}
                                         </Badge>
                                     </div>
                                     {col.beatId && (
-                                        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-50">
+                                        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-100">
                                             <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">
                                                 <Users className="h-3 w-3" />
                                                 {col.stats?.citizenCount} Citizens
@@ -268,13 +276,14 @@ export function OfficerBoard({ officers, beats, onOfficerClick, onOfficerMove }:
                                         </div>
                                     )}
                                 </CardHeader>
-                                <CardContent className={cn("flex-1 p-0 overflow-hidden", col.id === 'unassigned' ? "bg-orange-50/10" : "bg-slate-50/50")}>
-                                    <ScrollArea className="h-[calc(100vh-280px)]">
-                                        <BoardDropZone
-                                            column={col}
-                                            onDrop={(officerId) => onOfficerMove(officerId, col.beatId || null)}
-                                        />
-                                    </ScrollArea>
+                                <CardContent className={cn(
+                                    "flex-1 p-0 min-h-0 overflow-y-auto overscroll-contain",
+                                    col.id === 'unassigned' ? "bg-orange-50/10" : "bg-slate-50/30"
+                                )}>
+                                    <BoardDropZone
+                                        column={col}
+                                        onDrop={(officerId) => onOfficerMove(officerId, col.beatId || null)}
+                                    />
                                 </CardContent>
                             </Card>
                         </div>

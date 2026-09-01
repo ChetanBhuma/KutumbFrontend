@@ -83,6 +83,16 @@ class ApiClient {
                     }
                 }
 
+                // Handle 429 Rate Limiting with backoff retry
+                if (error.response?.status === 429 && originalRequest) {
+                    originalRequest._retry429Count = (originalRequest._retry429Count || 0) + 1;
+                    if (originalRequest._retry429Count <= 2) {
+                        const backoffDelay = originalRequest._retry429Count * 600;
+                        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                        return this.client(originalRequest);
+                    }
+                }
+
                 return Promise.reject(error);
             }
         );
@@ -635,6 +645,14 @@ class ApiClient {
         return this.patch<any>(`/citizen-portal/visit-requests/${id}`, { status });
     }
 
+    async getVerificationRequests(params?: any) {
+        return this.get<any>('/verifications', { params });
+    }
+
+    async assignVerificationRequest(id: string, data: { officerId: string; scheduledDate?: string; notes?: string }) {
+        return this.patch<any>(`/verifications/${id}/assign`, data);
+    }
+
     // Vulnerability configuration APIs
     async getVulnerabilityConfig() {
         return this.get<any>('/vulnerability/config');
@@ -729,8 +747,11 @@ class ApiClient {
         return this.post<any>(`/visits/${id}/complete`, data);
     }
 
-    async cancelVisit(id: string, reason: string) {
-        return this.post<any>(`/visits/${id}/cancel`, { reason });
+    async cancelVisit(id: string, reasonOrData?: string | { reason?: string }) {
+        const payload = typeof reasonOrData === 'string'
+            ? { reason: reasonOrData }
+            : (reasonOrData || { reason: 'Cancelled by staff/officer' });
+        return this.post<any>(`/visits/${id}/cancel`, payload);
     }
 
     async getCalendar(startDate: string, endDate: string, params?: any) {

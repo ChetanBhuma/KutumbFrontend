@@ -27,6 +27,7 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Sheet,
   SheetContent,
@@ -35,7 +36,7 @@ import {
   SheetTitle,
   SheetFooter,
 } from '@/components/ui/sheet';
-import { MapPin, Phone, Navigation, User, Clock, FileText, Eye } from 'lucide-react';
+import { MapPin, Phone, Navigation, User, Clock, FileText, Eye, Pencil } from 'lucide-react';
 import MapComponent from '@/components/MapComponent';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ExportButton } from '@/components/ui/export-button';
@@ -101,6 +102,7 @@ const getCoordinates = (): Promise<{ latitude: number; longitude: number } | nul
 
 export default function VisitsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [selectedVisit, setSelectedVisit] = useState<VisitRecord | null>(null);
   const [actionVisit, setActionVisit] = useState<VisitRecord | null>(null);
   const [actionType, setActionType] = useState<VisitAction | null>(null);
@@ -160,9 +162,17 @@ export default function VisitsPage() {
         const updated = { ...selectedVisit, status: 'In Progress' as const };
         setSelectedVisit(updated);
       }
+      toast({
+        title: "Visit Started",
+        description: "The visit has been marked as In Progress."
+      });
       setActionType(null); // Clear loading state
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to start visit. Ensure you are within range.');
+      toast({
+        title: "Failed to Start Visit",
+        description: err.response?.data?.message || 'Ensure you are within range.',
+        variant: "destructive"
+      });
       setActionType(null);
     }
   };
@@ -179,23 +189,44 @@ export default function VisitsPage() {
           gpsLatitude: coords?.latitude,
           gpsLongitude: coords?.longitude
         });
+        toast({
+          title: "Visit Completed",
+          description: "The visit report and completion details have been recorded."
+        });
       } else if (actionType === 'cancel') {
-        await apiClient.cancelVisit(actionVisit.id, actionNotes);
+        const cancellationReason = actionNotes.trim() || 'Cancelled by staff/officer';
+        await apiClient.cancelVisit(actionVisit.id, { reason: cancellationReason });
+        toast({
+          title: "Visit Cancelled",
+          description: "The scheduled visit has been cancelled successfully."
+        });
       } else if (actionType === 'reschedule') {
         if (!actionNotes) {
-          alert('Please select a date and time');
+          toast({
+            title: "Date & Time Required",
+            description: "Please select a date and time to reschedule.",
+            variant: "destructive"
+          });
           setActionLoading(false);
           return;
         }
         // actionNotes from datetime-local input is 'YYYY-MM-DDTHH:mm'
         const dateObj = new Date(actionNotes);
         if (isNaN(dateObj.getTime())) {
-          alert('Invalid date selected');
+          toast({
+            title: "Invalid Date",
+            description: "Please select a valid scheduled date and time.",
+            variant: "destructive"
+          });
           setActionLoading(false);
           return;
         }
         await apiClient.updateVisit(actionVisit.id, {
           scheduledDate: dateObj.toISOString(),
+        });
+        toast({
+          title: "Visit Rescheduled",
+          description: "The visit has been rescheduled successfully."
         });
       }
       await refetch();
@@ -208,7 +239,11 @@ export default function VisitsPage() {
         setSelectedVisit(null);
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Action failed');
+      toast({
+        title: "Action Failed",
+        description: err.response?.data?.message || 'Unable to complete the action.',
+        variant: "destructive"
+      });
     } finally {
       setActionLoading(false);
     }
@@ -225,9 +260,16 @@ export default function VisitsPage() {
         endDate: format(end, 'yyyy-MM-dd'),
       });
       await refetch();
-      alert('Auto-schedule completed for the next 7 days');
+      toast({
+        title: "Auto-Schedule Completed",
+        description: "Visits have been auto-scheduled for the next 7 days."
+      });
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Auto-schedule failed');
+      toast({
+        title: "Auto-Schedule Failed",
+        description: err.response?.data?.message || 'Auto-schedule could not be completed.',
+        variant: "destructive"
+      });
     } finally {
       setAutoScheduleLoading(false);
     }
@@ -452,23 +494,24 @@ export default function VisitsPage() {
                               {formatDistanceToNow(new Date(visit.createdAt), { addSuffix: true })}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right space-x-2">
-                            <>
-                              <Button size="sm" variant="ghost" onClick={() => setSelectedVisit(visit)}>
-                                <Eye className="h-4 w-4 mr-1" /> View
-                              </Button>
+                          <TableCell className="text-right space-x-1.5 whitespace-nowrap">
+                            <Button size="sm" variant="ghost" onClick={() => setSelectedVisit(visit)}>
+                              <Eye className="h-4 w-4 mr-1" /> View
+                            </Button>
 
-                              {['Scheduled', 'SCHEDULED', 'In Progress', 'IN PROGRESS', 'IN_PROGRESS'].includes(visit.status) && (
+                            {['Scheduled', 'SCHEDULED', 'In Progress', 'IN PROGRESS', 'IN_PROGRESS'].includes(visit.status) && (
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => router.push(`/visits/schedule?visitId=${visit.id}`)}>
+                                  <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                                </Button>
                                 <Button size="sm" variant="outline" onClick={() => { setActionVisit(visit); setActionType('reschedule'); }}>
                                   Reschedule
                                 </Button>
-                              )}
-                              {['Scheduled', 'SCHEDULED', 'In Progress', 'IN PROGRESS', 'IN_PROGRESS'].includes(visit.status) && (
                                 <Button size="sm" variant="destructive" onClick={() => { setActionVisit(visit); setActionType('cancel'); }}>
                                   Cancel
                                 </Button>
-                              )}
-                            </>
+                              </>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))
@@ -658,7 +701,19 @@ export default function VisitsPage() {
                 </div>
 
                 <SheetFooter className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  {/* Actions removed as per requirement: only View, Reschedule, Cancel allowed */}
+                  {['Scheduled', 'SCHEDULED', 'In Progress', 'IN PROGRESS', 'IN_PROGRESS'].includes(selectedVisit.status) && (
+                    <>
+                      <Button variant="outline" className="flex-1" onClick={() => { const id = selectedVisit.id; setSelectedVisit(null); router.push(`/visits/schedule?visitId=${id}`); }}>
+                        <Pencil className="h-4 w-4 mr-1.5" /> Edit Visit
+                      </Button>
+                      <Button variant="outline" className="flex-1" onClick={() => { const v = selectedVisit; setSelectedVisit(null); setActionVisit(v); setActionType('reschedule'); }}>
+                        Reschedule
+                      </Button>
+                      <Button variant="destructive" className="flex-1" onClick={() => { const v = selectedVisit; setSelectedVisit(null); setActionVisit(v); setActionType('cancel'); }}>
+                        Cancel Visit
+                      </Button>
+                    </>
+                  )}
                 </SheetFooter>
               </>
             )}

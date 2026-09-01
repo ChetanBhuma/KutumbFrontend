@@ -57,7 +57,14 @@ export function CitizenDetailSheet({ citizen, open, onOpenChange }: CitizenDetai
                             </div>
                             <div className="flex items-start gap-2 text-sm text-muted-foreground mt-1">
                                 <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                                <span>{citizen.permanentAddress}</span>
+                                <div className="flex flex-col gap-0.5">
+                                    {citizen.addressType && (
+                                        <span className="inline-flex w-fit items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-800">
+                                            {citizen.addressType === 'HOME' ? '🏠 HOME' : citizen.addressType === 'WORK' ? '💼 WORK' : citizen.addressType === 'HOTEL' ? '🏨 HOTEL' : `📍 ${citizen.addressType}`}
+                                        </span>
+                                    )}
+                                    <span>{citizen.permanentAddress}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

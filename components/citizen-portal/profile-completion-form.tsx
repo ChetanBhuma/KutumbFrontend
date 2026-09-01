@@ -63,6 +63,8 @@ export default function ProfileCompletionForm() {
         email: '',
 
         // Address
+        addressType: 'HOME',
+        customAddressType: '',
         addressLine1: '',
         addressLine2: '',
         city: 'New Delhi',
@@ -268,6 +270,8 @@ export default function ProfileCompletionForm() {
                         whatsappNumber: c.whatsappNumber || '',
                         email: c.email || '',
 
+                        addressType: ['HOME', 'WORK', 'HOTEL'].includes(c.addressType || '') ? (c.addressType || 'HOME') : (c.addressType ? 'Other' : 'HOME'),
+                        customAddressType: ['HOME', 'WORK', 'HOTEL'].includes(c.addressType || '') ? '' : (c.addressType || ''),
                         addressLine1: c.addressLine1 || (c.permanentAddress && c.permanentAddress !== 'Pending Update' ? c.permanentAddress.split(',')[0].trim() : '') || '',
                         addressLine2: c.addressLine2 || (c.permanentAddress && c.permanentAddress !== 'Pending Update' ? (c.permanentAddress.split(',')[1] || '').trim() : '') || '',
                         pincode: clean(c.pinCode || '', '000000'),
@@ -535,6 +539,7 @@ export default function ProfileCompletionForm() {
                 alternateMobile: formData.alternateMobile || null,
 
                 // Address
+                addressType: formData.addressType === 'Other' ? (formData.customAddressType?.trim() || 'Other') : (formData.addressType || 'HOME'),
                 addressLine1: formData.addressLine1,
                 addressLine2: formData.addressLine2,
                 pinCode: formData.pincode,
@@ -876,6 +881,42 @@ export default function ProfileCompletionForm() {
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+
+                                {/* Save Address As Dropdown */}
+                                <div className="space-y-3 md:col-span-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                                            <Home className="w-4 h-4 text-blue-600" /> Save Address As <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Select
+                                            value={formData.addressType || 'HOME'}
+                                            onValueChange={v => handleInputChange('addressType', v)}
+                                        >
+                                            <SelectTrigger className="bg-white border-slate-300">
+                                                <SelectValue placeholder="Select Address Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="HOME">🏠 HOME</SelectItem>
+                                                <SelectItem value="WORK">💼 WORK</SelectItem>
+                                                <SelectItem value="HOTEL">🏨 HOTEL</SelectItem>
+                                                <SelectItem value="Other">📍 Other</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {formData.addressType === 'Other' && (
+                                        <div className="space-y-1.5 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <Label className="text-xs font-semibold text-slate-700">Specify Address Type / Name <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                value={formData.customAddressType || ''}
+                                                onChange={e => handleInputChange('customAddressType', e.target.value)}
+                                                placeholder="E.g. Farmhouse, Son's Residence, Vacation Home"
+                                                className="bg-white border-slate-300"
+                                                required={formData.addressType === 'Other'}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2 md:col-span-2">
@@ -1281,8 +1322,13 @@ export default function ProfileCompletionForm() {
                                         <div><span className="block text-gray-500 text-xs">Mobile Number</span><span className="font-medium">{formData.mobileNumber}</span></div>
                                         <div><span className="block text-gray-500 text-xs">Email</span><span className="font-medium">{formData.email || '-'}</span></div>
                                         <div className="col-span-1 md:col-span-2">
-                                            <span className="block text-gray-500 text-xs">Permanent Address</span>
-                                            <span className="font-medium block">{formData.addressLine1}, {formData.addressLine2}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="block text-gray-500 text-xs">Permanent Address</span>
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                                    📍 {formData.addressType === 'Other' ? (formData.customAddressType || 'Custom') : (formData.addressType || 'HOME')}
+                                                </span>
+                                            </div>
+                                            <span className="font-medium block mt-1">{formData.addressLine1}, {formData.addressLine2}</span>
                                             <span className="font-medium block">{formData.city}, {formData.state} - {formData.pincode}</span>
                                         </div>
                                         <div>
