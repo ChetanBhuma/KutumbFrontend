@@ -225,6 +225,119 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
   }
+
+  /* Police Royal Blue & Wine Red Theme Utilities */
+  .bg-police-navy {
+    background-color: #061224;
+  }
+
+  .bg-police-royal {
+    background-color: #0F52BA;
+  }
+
+  .bg-police-wine {
+    background-color: #720924;
+  }
+
+  .bg-police-crimson {
+    background-color: #9F1239;
+  }
+
+  .text-police-gold {
+    color: #D4AF37;
+  }
+
+  .border-police-gold {
+    border-color: #D4AF37;
+  }
+
+  /* Police Gradient Presets */
+  .bg-police-gradient {
+    background: linear-gradient(135deg, #061224 0%, #0F3274 50%, #720924 100%);
+  }
+
+  .bg-police-gradient-subtle {
+    background: linear-gradient(135deg, rgba(6, 18, 36, 0.95) 0%, rgba(15, 50, 116, 0.9) 50%, rgba(114, 9, 36, 0.85) 100%);
+  }
+
+  .bg-police-card-gradient {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(241, 245, 249, 0.85) 100%);
+  }
+
+  /* Interactive Card Hover Fill System */
+  .card-hover-fill {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+  }
+
+  .card-hover-fill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #0A2540 0%, #0F52BA 45%, #881337 100%);
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s ease;
+    transform: scale(0.96);
+    z-index: -1;
+    border-radius: inherit;
+  }
+
+  .card-hover-fill:hover::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .card-hover-fill:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px -10px rgba(15, 82, 186, 0.35), 0 10px 20px -5px rgba(136, 19, 55, 0.25);
+    border-color: rgba(212, 175, 55, 0.4) !important;
+  }
+
+  .card-hover-fill:hover .card-text-invert {
+    color: #FFFFFF !important;
+  }
+
+  .card-hover-fill:hover .card-subtext-invert {
+    color: #E2E8F0 !important;
+  }
+
+  .card-hover-fill:hover .card-icon-invert {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #FFD700 !important;
+    transform: scale(1.1) rotate(4deg);
+  }
+
+  .card-hover-fill:hover .card-badge-invert {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #FFFFFF !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+  }
+
+  /* Police Insignia & Radar Pulse */
+  @keyframes police-beacon {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(15, 82, 186, 0.7), 0 0 0 0 rgba(159, 18, 57, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 14px rgba(15, 82, 186, 0), 0 0 0 24px rgba(159, 18, 57, 0);
+    }
+  }
+
+  .animate-police-beacon {
+    animation: police-beacon 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  }
+
+  /* Floating Card Animation */
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .animate-float-gentle {
+    animation: float-gentle 4s ease-in-out infinite;
+  }
 }
 
 /* ── High Contrast Mode ── */
