@@ -13,12 +13,15 @@ export function NotificationBell() {
 
   const fetchUnreadCount = async () => {
     try {
+      if (typeof window === 'undefined' || !apiClient.getAccessToken()) {
+        return;
+      }
       const response = await apiClient.getNotifications(1, 1)
       if (response && response.data) {
-        setUnreadCount(response.data.unread)
+        setUnreadCount(response.data.unread || 0)
       }
     } catch (error) {
-      console.error("Failed to fetch notification count", error)
+      // Silently catch background polling errors to avoid noisy console alerts
     }
   }
 
