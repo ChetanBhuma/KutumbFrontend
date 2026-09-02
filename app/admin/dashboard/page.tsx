@@ -44,7 +44,7 @@ function DashboardContent() {
     try {
       const res: any = await apiClient.getVerificationRequests({ status: 'Pending' })
       if (res.success) {
-        return { data: res.data?.requests || [] }
+        return { data: res.data?.requests || res.data?.items || (Array.isArray(res.data) ? res.data : []) }
       }
       return { data: [] }
     } catch {
@@ -58,7 +58,7 @@ function DashboardContent() {
     try {
       const res: any = await apiClient.getVisitRequests({ status: 'Pending' })
       if (res.success) {
-        return { data: res.data?.visitRequests || [] }
+        return { data: res.data?.visitRequests || res.data?.items || (Array.isArray(res.data) ? res.data : []) }
       }
       return { data: [] }
     } catch {
@@ -79,14 +79,15 @@ function DashboardContent() {
 
   // Open modal for Verification Assignment
   const openVerificationAssignModal = (req: any) => {
+    const sc = req.SeniorCitizen || req.seniorCitizen
     setModalItem({
       type: 'VERIFICATION',
       id: req.id,
-      citizenId: req.seniorCitizen?.id || req.seniorCitizenId,
-      citizenName: req.seniorCitizen?.fullName || 'Senior Citizen',
-      mobileNumber: req.seniorCitizen?.mobileNumber,
-      policeStationId: req.seniorCitizen?.policeStationId,
-      policeStationName: req.seniorCitizen?.policeStationName,
+      citizenId: sc?.id || req.seniorCitizenId,
+      citizenName: sc?.fullName || 'Senior Citizen',
+      mobileNumber: sc?.mobileNumber,
+      policeStationId: sc?.policeStationId,
+      policeStationName: sc?.PoliceStation?.name || sc?.policeStationName,
       defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       notes: req.remarks
     })
@@ -95,14 +96,15 @@ function DashboardContent() {
 
   // Open modal for Re-visit Assignment
   const openRevisitAssignModal = (req: any) => {
+    const sc = req.SeniorCitizen || req.seniorCitizen
     setModalItem({
       type: 'REVISIT',
       id: req.id,
-      citizenId: req.seniorCitizen?.id || req.seniorCitizenId,
-      citizenName: req.seniorCitizen?.fullName || 'Senior Citizen',
-      mobileNumber: req.seniorCitizen?.mobileNumber,
-      policeStationId: req.seniorCitizen?.policeStationId,
-      policeStationName: req.seniorCitizen?.policeStationName,
+      citizenId: sc?.id || req.seniorCitizenId,
+      citizenName: sc?.fullName || 'Senior Citizen',
+      mobileNumber: sc?.mobileNumber,
+      policeStationId: sc?.policeStationId,
+      policeStationName: sc?.PoliceStation?.name || sc?.policeStationName,
       defaultDate: req.preferredDate,
       visitType: req.visitType || 'Follow-up',
       notes: req.notes
@@ -426,37 +428,40 @@ function DashboardContent() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pendingVisitRequests.map((req: any) => (
-                        <TableRow key={req.id} className="hover:bg-slate-50/60 transition-colors">
-                          <TableCell>
-                            <div className="font-semibold text-slate-900">{req.seniorCitizen?.fullName || 'Senior Citizen'}</div>
-                            <div className="text-xs text-muted-foreground">{req.seniorCitizen?.mobileNumber}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="capitalize">
-                              {req.visitType || 'Follow-up'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-slate-800">
-                            {req.preferredDate ? new Date(req.preferredDate).toLocaleDateString() : 'TBD'}
-                            {req.preferredTimeSlot && <span className="text-xs text-muted-foreground block">{req.preferredTimeSlot}</span>}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate text-xs text-slate-600">
-                            {req.notes || 'Re-visit triggered by vulnerability assessment'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="gap-1.5 shadow-sm border border-slate-300"
-                              onClick={() => openRevisitAssignModal(req)}
-                            >
-                              <UserCheck className="h-4 w-4" />
-                              Assign Officer
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {pendingVisitRequests.map((req: any) => {
+                        const sc = req.SeniorCitizen || req.seniorCitizen;
+                        return (
+                          <TableRow key={req.id} className="hover:bg-slate-50/60 transition-colors">
+                            <TableCell>
+                              <div className="font-semibold text-slate-900">{sc?.fullName || 'Senior Citizen'}</div>
+                              <div className="text-xs text-muted-foreground">{sc?.mobileNumber}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="capitalize">
+                                {req.visitType || 'Follow-up'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm font-medium text-slate-800">
+                              {req.preferredDate ? new Date(req.preferredDate).toLocaleDateString() : 'TBD'}
+                              {req.preferredTimeSlot && <span className="text-xs text-muted-foreground block">{req.preferredTimeSlot}</span>}
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate text-xs text-slate-600">
+                              {req.notes || 'Re-visit triggered by vulnerability assessment'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="gap-1.5 shadow-sm border border-slate-300"
+                                onClick={() => openRevisitAssignModal(req)}
+                              >
+                                <UserCheck className="h-4 w-4" />
+                                Assign Officer
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
