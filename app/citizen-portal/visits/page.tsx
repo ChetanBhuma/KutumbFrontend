@@ -61,12 +61,12 @@ export default function CitizenVisitsPage() {
     return (
         <ProtectedRoute permissionCode="visits.read.own">
             <div className="space-y-6 min-h-[80vh]">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">My Visits</h1>
-                        <p className="text-muted-foreground">History of police visits and your requests.</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">My Visits</h1>
+                        <p className="text-xs sm:text-sm text-muted-foreground">History of police visits and your requests.</p>
                     </div>
-                    <Button asChild>
+                    <Button asChild className="w-full sm:w-auto text-xs sm:text-sm">
                         <Link href="/citizen-portal/visits/request">
                             <Plus className="mr-2 h-4 w-4" />
                             Request Visit
@@ -78,7 +78,7 @@ export default function CitizenVisitsPage() {
                     {visits.length > 0 ? (
                         visits.map((visit) => (
                             <Card key={visit.id}>
-                                <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                                <CardContent className="flex flex-col gap-4 p-4 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-start gap-4">
                                         <div className="rounded-full bg-blue-100 p-3 text-blue-600">
                                             <Calendar className="h-5 w-5" />

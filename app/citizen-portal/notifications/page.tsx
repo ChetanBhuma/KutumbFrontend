@@ -96,79 +96,84 @@ export default function CitizenNotificationsPage() {
         <ProtectedRoute permissionCode="profile.read.own">
             <div className="max-w-2xl mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Notification Preferences</h1>
-                    <p className="text-muted-foreground">Manage how we communicate with you and your emergency contacts.</p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Notification Preferences</h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Manage how we communicate with you and your emergency contacts.</p>
                 </div>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Communication Settings</CardTitle>
-                        <CardDescription>Control what alerts and messages you receive.</CardDescription>
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-base sm:text-lg">Communication Settings</CardTitle>
+                        <CardDescription className="text-xs sm:text-sm">Control what alerts and messages you receive.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                         {error && (
                             <Alert variant="destructive">
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}
 
-                        <div className="flex items-center justify-between space-x-2">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">General Notifications</Label>
-                                <p className="text-sm text-muted-foreground">Receive updates about your account and general announcements.</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5 min-w-0">
+                                <Label className="text-sm sm:text-base font-semibold">General Notifications</Label>
+                                <p className="text-xs sm:text-sm text-muted-foreground">Receive updates about your account and general announcements.</p>
                             </div>
                             <Switch
                                 checked={preferences.consentNotifications}
                                 onCheckedChange={() => toggle('consentNotifications')}
+                                className="shrink-0"
                             />
                         </div>
 
-                        <div className="flex items-center justify-between space-x-2">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Visit Reminders</Label>
-                                <p className="text-sm text-muted-foreground">Get reminded before a scheduled police visit.</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5 min-w-0">
+                                <Label className="text-sm sm:text-base font-semibold">Visit Reminders</Label>
+                                <p className="text-xs sm:text-sm text-muted-foreground">Get reminded before a scheduled police visit.</p>
                             </div>
                             <Switch
                                 checked={preferences.consentScheduledVisitReminder}
                                 onCheckedChange={() => toggle('consentScheduledVisitReminder')}
+                                className="shrink-0"
                             />
                         </div>
 
-                        <div className="flex items-center justify-between space-x-2">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Service Request Updates</Label>
-                                <p className="text-sm text-muted-foreground">Notifications when your requests are updated.</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5 min-w-0">
+                                <Label className="text-sm sm:text-base font-semibold">Service Request Updates</Label>
+                                <p className="text-xs sm:text-sm text-muted-foreground">Notifications when your requests are updated.</p>
                             </div>
                             <Switch
                                 checked={preferences.consentServiceRequest}
                                 onCheckedChange={() => toggle('consentServiceRequest')}
+                                className="shrink-0"
                             />
                         </div>
 
-                        <div className="flex items-center justify-between space-x-2">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Notify Family</Label>
-                                <p className="text-sm text-muted-foreground">Alert your emergency contacts during SOS or critical events.</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5 min-w-0">
+                                <Label className="text-sm sm:text-base font-semibold">Notify Family</Label>
+                                <p className="text-xs sm:text-sm text-muted-foreground">Alert your emergency contacts during SOS or critical events.</p>
                             </div>
                             <Switch
                                 checked={preferences.consentToNotifyFamily}
                                 onCheckedChange={() => toggle('consentToNotifyFamily')}
+                                className="shrink-0"
                             />
                         </div>
 
-                        <div className="flex items-center justify-between space-x-2">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Share Health Data</Label>
-                                <p className="text-sm text-muted-foreground">Allow sharing health info with emergency responders.</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5 min-w-0">
+                                <Label className="text-sm sm:text-base font-semibold">Share Health Data</Label>
+                                <p className="text-xs sm:text-sm text-muted-foreground">Allow sharing health info with emergency responders.</p>
                             </div>
                             <Switch
                                 checked={preferences.consentShareHealth}
                                 onCheckedChange={() => toggle('consentShareHealth')}
+                                className="shrink-0"
                             />
                         </div>
 
                         <div className="flex justify-end pt-4">
-                            <Button onClick={handleSave} disabled={saving}>
+                            <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm">
                                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                 Save Preferences
                             </Button>

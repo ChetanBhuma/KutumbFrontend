@@ -185,18 +185,18 @@ export default function CitizenSOSPage() {
                         <CardHeader>
                             <CardTitle>Active Alert Details</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="text-muted-foreground">Alert ID:</div>
-                                <div className="font-mono">{activeAlert.id}</div>
+                        <CardContent className="space-y-3 text-xs sm:text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="text-muted-foreground font-medium">Alert ID:</div>
+                                <div className="font-mono break-all">{activeAlert.id}</div>
 
-                                <div className="text-muted-foreground">Status:</div>
+                                <div className="text-muted-foreground font-medium">Status:</div>
                                 <div><span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">{activeAlert.status}</span></div>
 
-                                <div className="text-muted-foreground">Location:</div>
+                                <div className="text-muted-foreground font-medium">Location:</div>
                                 <div>{activeAlert.latitude?.toFixed(4)}, {activeAlert.longitude?.toFixed(4)}</div>
 
-                                <div className="text-muted-foreground">Last update:</div>
+                                <div className="text-muted-foreground font-medium">Last update:</div>
                                 <div>{lastUpdate || 'Just now'}</div>
                             </div>
 

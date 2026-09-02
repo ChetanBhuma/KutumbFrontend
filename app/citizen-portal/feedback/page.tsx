@@ -72,7 +72,7 @@ function CitizenFeedbackContent() {
                         <CardTitle>Rate Your Experience</CardTitle>
                         <CardDescription>Your feedback helps us improve our service.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6">
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {error && (
                                 <Alert variant="destructive">
@@ -111,9 +111,9 @@ function CitizenFeedbackContent() {
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-3">
-                                <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-                                <Button type="submit" disabled={loading}>
+                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                                <Button type="button" variant="outline" onClick={() => router.back()} className="w-full sm:w-auto">Cancel</Button>
+                                <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Submit Feedback'}
                                 </Button>
                             </div>

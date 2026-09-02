@@ -78,19 +78,19 @@ export default function CitizenDocumentsPage() {
     return (
         <ProtectedRoute permissionCode="documents.read.own">
             <div className="space-y-6 min-h-[80vh]">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">My Documents</h1>
-                        <p className="text-muted-foreground">Manage your identification and medical records.</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">My Documents</h1>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Manage your identification and medical records.</p>
                     </div>
                     <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
                         <DialogTrigger asChild>
-                            <Button>
+                            <Button className="w-full sm:w-auto text-xs sm:text-sm">
                                 <Upload className="mr-2 h-4 w-4" />
                                 Upload Document
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-[95vw] sm:max-w-md">
                             <DialogHeader>
                                 <DialogTitle>Upload Document</DialogTitle>
                             </DialogHeader>
@@ -134,7 +134,7 @@ export default function CitizenDocumentsPage() {
                     </Dialog>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {documents.length > 0 ? (
                         documents.map((doc) => (
                             <Card key={doc.id}>

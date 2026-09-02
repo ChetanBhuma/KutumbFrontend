@@ -710,14 +710,14 @@ export default function ProfileCompletionForm() {
                     <span className="text-blue-600 font-bold">{progress}% Profile Strength</span>
                 </div>
                 <Progress value={progress} className="h-2" />
-                <div className="flex justify-between mt-4 overflow-x-auto pb-2 gap-2 hide-scrollbar">
+                <div className="flex justify-start sm:justify-between mt-4 overflow-x-auto pb-2 gap-2 sm:gap-4 no-scrollbar">
                     {STEPS.map((step) => (
-                        <div key={step.id} className={`flex-shrink-0 flex flex-col items-center w-24 ${step.id === currentStep ? 'text-blue-600' : 'text-gray-400'}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 border-2 font-bold text-sm
+                        <div key={step.id} className={`flex-shrink-0 flex flex-col items-center w-20 sm:w-24 ${step.id === currentStep ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1 border-2 font-bold text-xs sm:text-sm
                                 ${step.id === currentStep ? 'border-blue-600 bg-blue-50' : step.id < currentStep ? 'border-green-600 bg-green-50 text-green-600' : 'border-gray-200'}`}>
-                                {step.id < currentStep ? <CheckCircle2 className="h-5 w-5" /> : step.id}
+                                {step.id < currentStep ? <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" /> : step.id}
                             </div>
-                            <span className="text-[10px] uppercase font-bold text-center tracking-wider truncate w-full">{step.title}</span>
+                            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-center tracking-wider truncate w-full">{step.title}</span>
                         </div>
                     ))}
                 </div>

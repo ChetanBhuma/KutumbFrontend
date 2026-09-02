@@ -113,16 +113,16 @@ export default function CitizenProfilePage() {
         <ProtectedRoute permissionCode="profile.update.own">
             <div className="space-y-8 animate-in fade-in duration-500 pb-10">
                 {/* Header Actions */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-4 rounded-xl shadow-sm border">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-4 rounded-xl shadow-sm border">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
-                        <p className="text-muted-foreground">Manage your personal information and view status</p>
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">My Profile</h1>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Manage your personal information and view status</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                         {citizen.idVerificationStatus === 'Verified' && (
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button variant="default" className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                                    <Button variant="default" className="flex-1 sm:flex-none gap-2 bg-indigo-600 hover:bg-indigo-700 text-xs sm:text-sm">
                                         <CreditCard className="h-4 w-4" /> View Digital ID
                                     </Button>
                                 </DialogTrigger>
@@ -131,24 +131,24 @@ export default function CitizenProfilePage() {
                                         <DialogTitle>Digital Identity Card</DialogTitle>
                                         <DialogDescription>Authenticated registration with Delhi Police.</DialogDescription>
                                     </DialogHeader>
-                                    <div className="flex justify-center py-4">
+                                    <div className="flex justify-center py-4 overflow-x-auto w-full max-w-full">
                                         <DigitalIdCard citizen={citizen} />
                                     </div>
                                 </DialogContent>
                             </Dialog>
                         )}
-                        <Button onClick={() => router.push('/citizen-portal/dashboard')} variant="outline" className="gap-2">
+                        <Button onClick={() => router.push('/citizen-portal/dashboard')} variant="outline" className="flex-1 sm:flex-none gap-2 text-xs sm:text-sm">
                             <Home className="h-4 w-4" /> Dashboard
                         </Button>
-                        <Button onClick={() => router.push('/citizen-portal/profile/complete?edit=true')} className="gap-2 shadow-md hover:shadow-lg transition-all">
+                        <Button onClick={() => router.push('/citizen-portal/profile/complete?edit=true')} className="flex-1 sm:flex-none gap-2 shadow-md hover:shadow-lg transition-all text-xs sm:text-sm">
                             <Edit className="h-4 w-4" /> Edit Profile
                         </Button>
                     </div>
                 </div>
 
                 {/* Status Bar */}
-                <Card className="p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold mb-4">Application Status</h3>
+                <Card className="p-4 sm:p-6 shadow-sm">
+                    <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Application Status</h3>
                     <CitizenWorkflow
                         status={citizen.status}
                         verificationStatus={citizen.idVerificationStatus}
@@ -156,33 +156,33 @@ export default function CitizenProfilePage() {
                     />
                 </Card>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
                     {/* Left Sidebar: Profile Card */}
                     <div className="lg:col-span-4 space-y-6">
                         <Card className="overflow-hidden border-none shadow-lg hover-lift bg-gradient-to-b from-card to-muted/20">
-                            <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
-                                <div className="absolute -bottom-16 left-1/2 -translate-x-1/2">
-                                    <Avatar className="h-32 w-32 border-4 border-card shadow-xl">
+                            <div className="h-28 sm:h-32 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
+                                <div className="absolute -bottom-14 sm:-bottom-16 left-1/2 -translate-x-1/2">
+                                    <Avatar className="h-28 w-28 sm:h-32 sm:w-32 border-4 border-card shadow-xl">
                                         <AvatarImage src={photoBlobUrl || citizen.photoUrl} className="object-cover" />
-                                        <AvatarFallback className="text-3xl bg-blue-100 text-blue-600 font-bold">
+                                        <AvatarFallback className="text-2xl sm:text-3xl bg-blue-100 text-blue-600 font-bold">
                                             {getInitials(citizen.fullName)}
                                         </AvatarFallback>
                                     </Avatar>
                                 </div>
                             </div>
-                            <CardContent className="pt-20 pb-8 text-center px-6">
-                                <h2 className="text-2xl font-bold text-foreground tracking-tight">{citizen.fullName}</h2>
-                                <p className="text-muted-foreground font-medium mt-1">
+                            <CardContent className="pt-16 sm:pt-20 pb-6 sm:pb-8 text-center px-4 sm:px-6">
+                                <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{citizen.fullName}</h2>
+                                <p className="text-xs sm:text-sm text-muted-foreground font-medium mt-1">
                                     {citizen.registrationNo || 'Reg: Pending'}
                                 </p>
 
-                                <div className="flex flex-wrap justify-center gap-2 my-6">
-                                    <Badge variant={citizen.status === 'APPROVED' ? 'default' : 'secondary'} className="px-3 py-1 text-sm shadow-sm">
+                                <div className="flex flex-wrap justify-center gap-2 my-4 sm:my-6">
+                                    <Badge variant={citizen.status === 'APPROVED' ? 'default' : 'secondary'} className="px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm shadow-sm">
                                         {citizen.status}
                                     </Badge>
                                     <Badge
                                         variant="outline"
-                                        className={`px-3 py-1 text-sm shadow-sm border-2 ${citizen.idVerificationStatus === 'Verified'
+                                        className={`px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm shadow-sm border-2 ${citizen.idVerificationStatus === 'Verified'
                                             ? 'text-green-600 border-green-200 bg-green-50'
                                             : 'text-amber-600 border-amber-200 bg-amber-50'}`}
                                     >
@@ -190,31 +190,31 @@ export default function CitizenProfilePage() {
                                     </Badge>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4 text-left bg-card border rounded-xl p-4 shadow-sm">
+                                <div className="grid grid-cols-2 gap-3 sm:gap-4 text-left bg-card border rounded-xl p-3 sm:p-4 shadow-sm">
                                     <div>
-                                        <p className="text-xs text-muted-foreground uppercase">DOB</p>
-                                        <p className="font-semibold">{citizen.dateOfBirth ? format(new Date(citizen.dateOfBirth), 'dd MMM yyyy') : 'N/A'}</p>
+                                        <p className="text-[10px] sm:text-xs text-muted-foreground uppercase">DOB</p>
+                                        <p className="font-semibold text-xs sm:text-sm">{citizen.dateOfBirth ? format(new Date(citizen.dateOfBirth), 'dd MMM yyyy') : 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground uppercase">Gender</p>
-                                        <p className="font-semibold capitalize">{citizen.gender || 'N/A'}</p>
+                                        <p className="text-[10px] sm:text-xs text-muted-foreground uppercase">Gender</p>
+                                        <p className="font-semibold text-xs sm:text-sm capitalize">{citizen.gender || 'N/A'}</p>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 space-y-2 text-left">
-                                    <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                        <Phone className="h-4 w-4 text-primary" />
-                                        <span className="font-medium">{citizen.mobileNumber}</span>
+                                <div className="mt-4 sm:mt-6 space-y-2 text-left">
+                                    <div className="flex items-center gap-3 text-xs sm:text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                        <Phone className="h-4 w-4 text-primary shrink-0" />
+                                        <span className="font-medium font-mono">{citizen.mobileNumber}</span>
                                     </div>
-                                    <div className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                        <MapPin className="h-4 w-4 text-primary shrink-0" />
-                                        <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex items-start gap-3 text-xs sm:text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                        <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                             {citizen.addressType && (
-                                                <span className="shrink-0 px-2 py-0.5 text-[11px] font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                                <span className="shrink-0 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
                                                     {citizen.addressType === 'HOME' ? '🏠 HOME' : citizen.addressType === 'WORK' ? '💼 WORK' : citizen.addressType === 'HOTEL' ? '🏨 HOTEL' : `📍 ${citizen.addressType}`}
                                                 </span>
                                             )}
-                                            <span className="truncate">{citizen.permanentAddress || 'Address not listed'}</span>
+                                            <span className="break-words">{citizen.permanentAddress || 'Address not listed'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -224,22 +224,22 @@ export default function CitizenProfilePage() {
                         {primaryContact && (
                             <Card className="shadow-md hover-lift border-l-4 border-l-red-500">
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-base flex items-center gap-2 font-bold text-foreground">
+                                    <CardTitle className="text-sm sm:text-base flex items-center gap-2 font-bold text-foreground">
                                         <Heart className="h-4 w-4 text-red-500 fill-red-500" /> Emergency Contact
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex items-center gap-4 p-2">
-                                        <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-lg shadow-inner">
+                                    <div className="flex items-center gap-3 sm:gap-4 p-2">
+                                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-base sm:text-lg shadow-inner shrink-0">
                                             {getInitials(primaryContact.name)}
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-lg">{primaryContact.name}</p>
-                                            <p className="text-sm text-muted-foreground font-medium">{primaryContact.relation}</p>
-                                            <p className="text-sm font-mono mt-1">{primaryContact.mobileNumber}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-sm sm:text-lg truncate">{primaryContact.name}</p>
+                                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">{primaryContact.relation}</p>
+                                            <p className="text-xs sm:text-sm font-mono mt-0.5">{primaryContact.mobileNumber}</p>
                                         </div>
-                                        <Button size="icon" variant="ghost" asChild className="h-10 w-10 rounded-full bg-green-50 text-green-600 shadow-sm">
-                                            <a href={`tel:${primaryContact.mobileNumber}`}><Phone className="h-5 w-5" /></a>
+                                        <Button size="icon" variant="ghost" asChild className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-green-50 text-green-600 shadow-sm shrink-0">
+                                            <a href={`tel:${primaryContact.mobileNumber}`}><Phone className="h-4 w-4 sm:h-5 sm:w-5" /></a>
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -249,14 +249,14 @@ export default function CitizenProfilePage() {
 
                     {/* Right Content: Details Tabs */}
                     <div className="lg:col-span-8">
-                        <Tabs defaultValue="overview" className="space-y-6">
-                            <TabsList className="w-full justify-start h-auto p-1.5 bg-muted/50 border rounded-xl backdrop-blur-sm flex-wrap">
-                                <TabsTrigger value="overview" className="flex-1 min-w-[100px] rounded-lg">Overview</TabsTrigger>
-                                <TabsTrigger value="personal" className="flex-1 min-w-[100px] rounded-lg">Personal</TabsTrigger>
-                                <TabsTrigger value="contact" className="flex-1 min-w-[100px] rounded-lg">Contact</TabsTrigger>
-                                <TabsTrigger value="family" className="flex-1 min-w-[100px] rounded-lg">Family</TabsTrigger>
-                                <TabsTrigger value="staff" className="flex-1 min-w-[100px] rounded-lg">Helpers</TabsTrigger>
-                                <TabsTrigger value="health" className="flex-1 min-w-[100px] rounded-lg">Health</TabsTrigger>
+                        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+                            <TabsList className="w-full justify-start h-auto p-1.5 bg-muted/50 border rounded-xl backdrop-blur-sm grid grid-cols-3 sm:grid-cols-6 gap-1">
+                                <TabsTrigger value="overview" className="rounded-lg text-xs sm:text-sm py-1.5 sm:py-2">Overview</TabsTrigger>
+                                <TabsTrigger value="personal" className="rounded-lg text-xs sm:text-sm py-1.5 sm:py-2">Personal</TabsTrigger>
+                                <TabsTrigger value="contact" className="rounded-lg text-xs sm:text-sm py-1.5 sm:py-2">Contact</TabsTrigger>
+                                <TabsTrigger value="family" className="rounded-lg text-xs sm:text-sm py-1.5 sm:py-2">Family</TabsTrigger>
+                                <TabsTrigger value="staff" className="rounded-lg text-xs sm:text-sm py-1.5 sm:py-2">Helpers</TabsTrigger>
+                                <TabsTrigger value="health" className="rounded-lg text-xs sm:text-sm py-1.5 sm:py-2">Health</TabsTrigger>
                             </TabsList>
 
                             {/* OVERVIEW TAB */}

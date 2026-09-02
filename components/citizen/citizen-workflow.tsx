@@ -64,24 +64,24 @@ export function CitizenWorkflow({ status, verificationStatus, digitalCardIssued 
                 />
 
                 {steps.map((step, index) => (
-                    <div key={step.id} className="flex flex-col items-center bg-background px-2">
+                    <div key={step.id} className="flex flex-col items-center bg-background px-1 sm:px-2">
                         <div
                             className={cn(
-                                "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                                "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
                                 step.status === "completed" ? "bg-primary border-primary text-primary-foreground" :
                                     step.status === "current" ? "bg-background border-primary text-primary animate-pulse" :
                                         step.status === "rejected" ? "bg-red-100 border-red-500 text-red-600" :
                                             "bg-muted border-muted-foreground/30 text-muted-foreground"
                             )}
                         >
-                            {step.status === "completed" ? <CheckCircle2 className="w-6 h-6" /> :
-                                step.status === "rejected" ? <XCircle className="w-6 h-6" /> :
-                                    step.status === "current" ? <Clock className="w-6 h-6" /> :
-                                        <Circle className="w-6 h-6" />}
+                            {step.status === "completed" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> :
+                                step.status === "rejected" ? <XCircle className="w-4 h-4 sm:w-5 sm:h-5" /> :
+                                    step.status === "current" ? <Clock className="w-4 h-4 sm:w-5 sm:h-5" /> :
+                                        <Circle className="w-4 h-4 sm:w-5 sm:h-5" />}
                         </div>
-                        <div className="mt-2 text-center">
+                        <div className="mt-1.5 sm:mt-2 text-center">
                             <p className={cn(
-                                "text-sm font-bold",
+                                "text-[10px] sm:text-xs md:text-sm font-bold leading-tight",
                                 step.status === "completed" ? "text-primary" :
                                     step.status === "current" ? "text-foreground" :
                                         step.status === "rejected" ? "text-red-600" :
@@ -89,7 +89,7 @@ export function CitizenWorkflow({ status, verificationStatus, digitalCardIssued 
                             )}>
                                 {step.label}
                             </p>
-                            <p className="text-xs text-muted-foreground hidden md:block max-w-[120px]">
+                            <p className="text-[11px] text-muted-foreground hidden md:block max-w-[120px] mt-0.5">
                                 {step.description}
                             </p>
                         </div>

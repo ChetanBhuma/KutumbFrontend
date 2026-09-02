@@ -126,7 +126,7 @@ export default function VisitRequestPage() {
                             Please let us know when and why you would like a visit.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6">
                         {error && (
                             <Alert variant="destructive" className="mb-4">
                                 <AlertDescription>{error}</AlertDescription>
@@ -139,96 +139,84 @@ export default function VisitRequestPage() {
                                     <Input
                                         type="date"
                                         value={form.preferredDate}
-                                        onChange={(e) => setForm((prev) => ({ ...prev, preferredDate: e.target.value }))}
-                                        min={new Date().toISOString().split('T')[0]}
+                                        onChange={(e) => setForm({ ...form, preferredDate: e.target.value })}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Preferred Time Slot</Label>
+                                    <Label>Preferred Time</Label>
                                     <Select
                                         value={form.preferredTimeSlot}
-                                        onValueChange={(value) => setForm((prev) => ({ ...prev, preferredTimeSlot: value }))}
+                                        onValueChange={(val) => setForm({ ...form, preferredTimeSlot: val })}
                                     >
-                                        <SelectTrigger className="h-14 text-lg p-4 bg-white">
-                                            <SelectValue placeholder="Select Time Slot" />
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a slot" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Any" className="text-lg py-3">Any Time (Flexible)</SelectItem>
-                                            <SelectItem value="Morning" className="text-lg py-3">Morning (9 AM - 12 PM)</SelectItem>
-                                            <SelectItem value="Afternoon" className="text-lg py-3">Afternoon (12 PM - 4 PM)</SelectItem>
-                                            <SelectItem value="Evening" className="text-lg py-3">Evening (4 PM - 8 PM)</SelectItem>
+                                            <SelectItem value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</SelectItem>
+                                            <SelectItem value="Afternoon (12 PM - 3 PM)">Afternoon (12 PM - 3 PM)</SelectItem>
+                                            <SelectItem value="Evening (3 PM - 6 PM)">Evening (3 PM - 6 PM)</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-sm text-slate-500">Choose a time that suits you best.</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
-                                <Label className="text-lg font-semibold text-slate-800">
-                                    Type of Visit <span className="text-red-500">*</span>
-                                </Label>
+                            <div className="space-y-2">
+                                <Label>Reason for Visit</Label>
                                 <Select
                                     value={form.visitType}
-                                    onValueChange={(value) => setForm((prev) => ({ ...prev, visitType: value }))}
+                                    onValueChange={(val) => setForm({ ...form, visitType: val })}
                                 >
-                                    <SelectTrigger className="h-14 text-lg p-4 bg-white">
-                                        <SelectValue placeholder="Select Visit Reason" />
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Routine" className="text-lg py-3">Routine Check-up</SelectItem>
-                                        <SelectItem value="Follow-up" className="text-lg py-3">Follow-up Visit</SelectItem>
-                                        <SelectItem value="Complaint" className="text-lg py-3">File a Complaint / Issue</SelectItem>
-                                        <SelectItem value="Assistance" className="text-lg py-3">Need Assistance</SelectItem>
+                                        <SelectItem value="Routine Welfare">Routine Welfare</SelectItem>
+                                        <SelectItem value="Emergency Assistance">Emergency Assistance</SelectItem>
+                                        <SelectItem value="Medical Check">Medical Check</SelectItem>
+                                        <SelectItem value="Security Audit">Security Audit</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                                    <Label className="text-lg font-semibold text-slate-800">
-                                        Additional Notes (Optional)
-                                    </Label>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <Label>Notes / Specific Requests</Label>
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        size="lg"
+                                        size="sm"
                                         onClick={detectLocation}
-                                        className="h-12 text-base border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 shadow-sm transition-all"
+                                        className="text-xs flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
                                     >
-                                        <MapPin className="h-5 w-5 mr-2 text-blue-600" />
-                                        Auto-Detect My Location (GPS)
+                                        <MapPin className="h-3.5 w-3.5" />
+                                        Attach Current Location
                                     </Button>
                                 </div>
                                 <Textarea
+                                    rows={4}
                                     value={form.notes}
-                                    onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                                    placeholder="Please describe why you need this visit (e.g., 'I am not feeling safe' or 'I need help with documents')..."
-                                    className="min-h-[150px] text-lg p-4 leading-relaxed"
+                                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                                    placeholder="Please provide any additional details that might help the officer..."
                                 />
-                                <div className="bg-blue-50 p-3 rounded-md flex items-start gap-3 border border-blue-100">
-                                    <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-                                    <p className="text-base text-blue-800">
-                                        Tip: Tapping "Auto-Detect My Location" helps the officer find your exact spot quickly.
-                                    </p>
-                                </div>
                             </div>
 
-                            <div className="flex flex-col-reverse md:flex-row justify-end gap-4 pt-6 md:pt-8 border-t">
+                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 sm:pt-6">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => router.back()}
-                                    className="h-14 text-lg px-8 border-slate-300 text-slate-700"
+                                    className="h-11 sm:h-12 text-sm sm:text-base px-6 border-slate-300 text-slate-700 w-full sm:w-auto"
                                     disabled={loading}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
-                                    className="h-14 text-lg px-10 bg-blue-700 hover:bg-blue-800 shadow-md transition-all sm:w-auto w-full"
+                                    className="h-11 sm:h-12 text-sm sm:text-base px-8 bg-blue-700 hover:bg-blue-800 shadow-md transition-all sm:w-auto w-full"
                                     disabled={loading}
                                 >
-                                    {loading ? <Loader2 className="mr-3 h-6 w-6 animate-spin" /> : <span className="flex items-center">Submit Request <ArrowRight className="ml-2 h-5 w-5" /></span>}
+                                    {loading ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <span className="flex items-center">Submit Request <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" /></span>}
                                 </Button>
                             </div>
                         </form>

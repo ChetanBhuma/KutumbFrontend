@@ -18,6 +18,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { AuthHeader } from '@/components/auth/auth-shell';
 
 export default function CitizenHeader() {
     const router = useRouter();
@@ -69,26 +70,20 @@ export default function CitizenHeader() {
         { href: '/citizen-portal/documents', label: 'Documents' },
     ];
 
-    // Show minimal header for public/auth pages
+    // Show auth header for login / register pages
     const isPublicPage = pathname === '/citizen-portal/login'
         || pathname === '/citizen-portal/signup'
         || pathname === '/citizen-portal/register';
 
     if (isPublicPage) {
         return (
-            <header className="border-b bg-white">
-                <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-                    <Link href="/">
-                        <p className="text-sm uppercase tracking-widest text-blue-600">Delhi Police · Kutumb</p>
-                        <h1 className="text-xl font-semibold text-slate-800">Senior Citizen Portal</h1>
-                    </Link>
-                    {pathname === '/citizen-portal/register' && (
-                        <Link href="/citizen-portal/login">
-                            <Button variant="outline">Already Registered? Login</Button>
-                        </Link>
-                    )}
-                </div>
-            </header>
+            <AuthHeader
+                title="Senior Citizen Portal"
+                action={pathname === '/citizen-portal/register' ? {
+                    label: 'Already Registered? Login',
+                    href: '/citizen-portal/login'
+                } : undefined}
+            />
         );
     }
 
@@ -96,7 +91,7 @@ export default function CitizenHeader() {
         <header className="sticky top-0 z-50 border-b bg-white shadow-sm">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-8">
-                    <Link href="/">
+                    <Link href="/citizen-portal">
                         <div>
                             <p className="text-xs uppercase tracking-widest text-blue-600">Delhi Police</p>
                             <h1 className="text-lg font-bold text-slate-800">Kutumb</h1>
@@ -107,9 +102,9 @@ export default function CitizenHeader() {
                         <nav className="hidden md:flex items-center gap-6">
                             {navItems.map((item) => (
                                 <Link
-                                    key={item.href}
+                                    key={`desktop-nav-${item.href}`}
                                     href={item.href}
-                                    className={`text-sm font-medium transition-colors hover:text-blue-600 ${pathname === item.href ? 'text-blue-600' : 'text-slate-600'
+                                    className={`text-sm font-medium transition-colors hover:text-blue-600 ${pathname === item.href ? 'text-blue-600 font-semibold' : 'text-slate-600'
                                         }`}
                                 >
                                     {item.label}
@@ -122,27 +117,27 @@ export default function CitizenHeader() {
                 <div className="flex items-center gap-3">
                     {isLoggedIn ? (
                         <>
-                            <Button variant="destructive" size="sm" asChild className="hidden md:inline-flex">
+                            <Button variant="destructive" size="sm" asChild className="hidden md:inline-flex bg-rose-600 hover:bg-rose-700 text-white">
                                 <Link href="/citizen-portal/sos">SOS Alert</Link>
                             </Button>
 
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="hidden md:inline-flex">
+                                    <Button variant="ghost" size="sm" className="hidden md:inline-flex text-slate-700 hover:text-slate-900 hover:bg-slate-100">
                                         <LogOut className="mr-2 h-4 w-4" />
                                         Logout
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="bg-white border border-slate-200 text-slate-900">
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
+                                        <AlertDialogDescription className="text-slate-500">
                                             You will be logged out of your account.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleLogout}>Logout</AlertDialogAction>
+                                        <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-100">Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleLogout} className="bg-rose-600 hover:bg-rose-700 text-white">Logout</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -150,28 +145,28 @@ export default function CitizenHeader() {
                             {/* Mobile Menu */}
                             <Sheet open={isOpen} onOpenChange={setIsOpen}>
                                 <SheetTrigger asChild className="md:hidden">
-                                    <Button variant="ghost" size="icon">
+                                    <Button variant="ghost" size="icon" className="text-slate-700 hover:bg-slate-100">
                                         <Menu className="h-6 w-6" />
                                     </Button>
                                 </SheetTrigger>
-                                <SheetContent side="right">
+                                <SheetContent side="right" className="bg-white border-l border-slate-200">
                                     <div className="flex flex-col gap-6 pt-10">
                                         {navItems.map((item) => (
                                             <Link
-                                                key={item.href}
+                                                key={`mobile-nav-${item.href}`}
                                                 href={item.href}
                                                 onClick={() => setIsOpen(false)}
-                                                className={`text-lg font-medium ${pathname === item.href ? 'text-blue-600' : 'text-slate-600'
+                                                className={`text-lg font-medium ${pathname === item.href ? 'text-blue-600 font-bold' : 'text-slate-700 hover:text-blue-600'
                                                     }`}
                                             >
                                                 {item.label}
                                             </Link>
                                         ))}
-                                        <div className="border-t pt-6 flex flex-col gap-3">
-                                            <Button variant="destructive" asChild className="w-full">
+                                        <div className="border-t border-slate-200 pt-6 flex flex-col gap-3">
+                                            <Button variant="destructive" asChild className="w-full bg-rose-600 hover:bg-rose-700 text-white">
                                                 <Link href="/citizen-portal/sos">Emergency SOS</Link>
                                             </Button>
-                                            <Button variant="outline" onClick={handleLogout} className="w-full">
+                                            <Button variant="outline" onClick={handleLogout} className="w-full border-slate-300">
                                                 Logout
                                             </Button>
                                         </div>
