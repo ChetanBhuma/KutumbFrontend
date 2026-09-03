@@ -2,29 +2,19 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
     Users,
     Phone,
-    MapPin,
-    Heart,
     ArrowRight,
-    Clock,
     ChevronLeft,
     ChevronRight
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { TrustAndAdvisorySection } from '@/components/landing/TrustAndAdvisorySection'
+import { EmergencyHelplinesSection } from '@/components/landing/EmergencyHelplinesSection'
 
 export default function LandingPage() {
     const [activeSlide, setActiveSlide] = useState(0)
-    const [stats, setStats] = useState({
-        citizens: 0,
-        stations: 0,
-        visits: 0,
-        response: 0
-    })
 
     const slides = [
         {
@@ -57,43 +47,6 @@ export default function LandingPage() {
 
     const nextSlide = () => setActiveSlide((prev) => (prev + 1) % slides.length)
     const prevSlide = () => setActiveSlide((prev) => (prev - 1 + slides.length) % slides.length)
-
-    // Animated counter effect
-    useEffect(() => {
-        const targetStats = {
-            citizens: 12847,
-            stations: 24,
-            visits: 1520,
-            response: 5
-        }
-
-        const duration = 1800
-        const steps = 50
-        const increment = {
-            citizens: targetStats.citizens / steps,
-            stations: targetStats.stations / steps,
-            visits: targetStats.visits / steps,
-            response: targetStats.response / steps
-        }
-
-        let currentStep = 0
-        const timer = setInterval(() => {
-            if (currentStep < steps) {
-                setStats({
-                    citizens: Math.floor(increment.citizens * currentStep),
-                    stations: Math.floor(increment.stations * currentStep),
-                    visits: Math.floor(increment.visits * currentStep),
-                    response: Math.floor(increment.response * currentStep)
-                })
-                currentStep++
-            } else {
-                setStats(targetStats)
-                clearInterval(timer)
-            }
-        }, duration / steps)
-
-        return () => clearInterval(timer)
-    }, [])
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-[#0F52BA] selection:text-white">
@@ -194,47 +147,8 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* 4. Animated Police Metrics Section */}
-            <section className="py-10 sm:py-14 bg-gradient-to-r from-[#061224] via-[#0F3274] to-[#720924] text-white relative overflow-hidden border-y border-white/10">
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 text-center">
-                        <div className="group p-3 sm:p-4 rounded-xl bg-slate-950/40 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/50 transition-all">
-                            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 text-blue-300 mb-2 group-hover:scale-110 transition-transform">
-                                <Users className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </div>
-                            <div className="text-2xl sm:text-3xl md:text-4xl font-black text-white">{stats.citizens.toLocaleString()}+</div>
-                            <p className="text-[11px] sm:text-xs text-blue-200 mt-1 font-medium">Registered Senior Citizens</p>
-                        </div>
-
-                        <div className="group p-3 sm:p-4 rounded-xl bg-slate-950/40 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/50 transition-all">
-                            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-500/20 text-rose-300 mb-2 group-hover:scale-110 transition-transform">
-                                <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </div>
-                            <div className="text-2xl sm:text-3xl md:text-4xl font-black text-white">{stats.stations} Police</div>
-                            <p className="text-[11px] sm:text-xs text-blue-200 mt-1 font-medium">Districts & Sub-Divisions</p>
-                        </div>
-
-                        <div className="group p-3 sm:p-4 rounded-xl bg-slate-950/40 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/50 transition-all">
-                            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 text-[#D4AF37] mb-2 group-hover:scale-110 transition-transform">
-                                <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </div>
-                            <div className="text-2xl sm:text-3xl md:text-4xl font-black text-white">{stats.visits.toLocaleString()}+</div>
-                            <p className="text-[11px] sm:text-xs text-blue-200 mt-1 font-medium">Monthly Physical Visits</p>
-                        </div>
-
-                        <div className="group p-3 sm:p-4 rounded-xl bg-slate-950/40 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/50 transition-all">
-                            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/20 text-emerald-300 mb-2 group-hover:scale-110 transition-transform">
-                                <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </div>
-                            <div className="text-2xl sm:text-3xl md:text-4xl font-black text-white">&lt; {stats.response} Mins</div>
-                            <p className="text-[11px] sm:text-xs text-blue-200 mt-1 font-medium">Emergency Response Time</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 5. Section: Community Trust, Testimonials & Cyber Advisory */}
-            <TrustAndAdvisorySection />
+            {/* 3. Section: 24/7 Emergency Helplines & Calling Cards */}
+            <EmergencyHelplinesSection />
 
             {/* 10. Call to Action Section with Police Insignia */}
             <section className="py-14 sm:py-20 bg-gradient-to-r from-[#061224] via-[#0F3274] to-[#720924] text-white relative overflow-hidden border-t border-white/15">
@@ -242,12 +156,9 @@ export default function LandingPage() {
                     <Badge className="bg-[#D4AF37] text-slate-950 font-bold mb-4 text-xs sm:text-sm">
                         Zero Registration Fee • Direct Police Protection
                     </Badge>
-                    <h3 className="text-2xl sm:text-3xl md:text-5xl font-black mb-4 sm:mb-6 tracking-tight">
+                    <h3 className="text-2xl sm:text-3xl md:text-5xl font-black mb-6 sm:mb-8 tracking-tight">
                         Enroll Your Senior Family Members Today
                     </h3>
-                    <p className="text-sm sm:text-base md:text-lg text-blue-100 max-w-2xl mx-auto mb-6 sm:mb-8">
-                        Join over 12,000 senior citizens across Delhi who experience peace of mind with regular doorstep visits and 24/7 emergency police support.
-                    </p>
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center w-full max-w-md sm:max-w-none mx-auto">
                         <Link href="/citizen-portal/register" className="w-full sm:w-auto">
                             <Button size="lg" className="w-full sm:w-auto bg-white text-slate-950 hover:bg-slate-100 font-extrabold text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6 rounded-xl shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
