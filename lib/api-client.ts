@@ -30,6 +30,10 @@ class ApiClient {
                     config.headers.Authorization = `Bearer ${token}`;
                 }
 
+                // If data is FormData, remove Content-Type so browser can set multipart/form-data with boundary
+                if (config.data instanceof FormData && config.headers) {
+                    delete config.headers['Content-Type'];
+                }
 
                 return config;
             },
@@ -373,18 +377,14 @@ class ApiClient {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('documentType', documentType);
-        return this.post<any>('/citizen-profile/documents', formData, {
-            headers: { 'Content-Type': null }
-        });
+        return this.post<any>('/citizen-profile/documents', formData);
     }
 
     async uploadCitizenDocument(citizenId: string, file: File, documentType: string) {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('documentType', documentType);
-        return this.post<any>(`/citizens/${citizenId}/documents`, formData, {
-            headers: { 'Content-Type': null }
-        });
+        return this.post<any>(`/citizens/${citizenId}/documents`, formData);
     }
 
     // Citizen APIs
@@ -559,9 +559,11 @@ class ApiClient {
     }
 
     async uploadMyDocument(formData: FormData) {
-        return this.post<any>('/citizen-profile/documents', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        return this.post<any>('/citizen-profile/documents', formData);
+    }
+
+    async deleteMyDocument(id: string) {
+        return this.delete<any>(`/citizen-profile/documents/${id}`);
     }
 
     async updateMyNotifications(preferences: any) {

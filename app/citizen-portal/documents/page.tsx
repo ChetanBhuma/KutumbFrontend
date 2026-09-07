@@ -23,6 +23,8 @@ export default function CitizenDocumentsPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [docType, setDocType] = useState('ID Proof');
 
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
     useEffect(() => {
         fetchDocuments();
     }, []);
@@ -31,7 +33,15 @@ export default function CitizenDocumentsPage() {
         try {
             const response = await apiClient.getMyDocuments();
             if (response.success) {
-                setDocuments(response.data.documents);
+                // Ensure client-side deduplication by ID and fileUrl
+                const seen = new Set<string>();
+                const uniqueDocs = (response.data.documents || []).filter((doc: any) => {
+                    const key = doc.id || `${doc.documentType}_${doc.fileUrl}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+                setDocuments(uniqueDocs);
             }
         } catch (err) {
             console.error('Failed to load documents', err);
@@ -60,14 +70,75 @@ export default function CitizenDocumentsPage() {
             const response = await apiClient.uploadMyDocument(formData);
             if (response.success) {
                 toast({ title: 'Upload Successful', description: 'Document has been added.' });
-                setDocuments([response.data.document, ...documents]);
                 setUploadOpen(false);
                 setSelectedFile(null);
+                // Refresh list from server to get accurate database state
+                fetchDocuments();
             }
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Failed to upload document');
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleDelete = async (docId: string, docName: string) => {
+        if (!confirm(`Are you sure you want to delete "${docName}"?`)) return;
+
+        setDeletingId(docId);
+        try {
+            const res = await apiClient.deleteMyDocument(docId);
+            if (res.success) {
+                setDocuments(prev => prev.filter(d => d.id !== docId));
+                toast({ title: 'Document Deleted', description: 'The document has been removed.' });
+            }
+        } catch (err: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Delete Failed',
+                description: err?.response?.data?.message || 'Could not delete document.'
+            });
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const formatFileSize = (bytes?: number) => {
+        if (!bytes || isNaN(bytes)) return '';
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    const getDocTypeBadgeStyle = (type: string) => {
+        switch (type?.toLowerCase()) {
+            case 'profilephoto':
+            case 'profile photo':
+                return 'bg-purple-100 text-purple-800 border-purple-200';
+            case 'id proof':
+            case 'identityproof':
+                return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'address proof':
+            case 'addressproof':
+                return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+            case 'medical record':
+            case 'medicalrecord':
+                return 'bg-rose-100 text-rose-800 border-rose-200';
+            default:
+                return 'bg-slate-100 text-slate-800 border-slate-200';
+        }
+    };
+
+    const formatDocTypeLabel = (type: string) => {
+        switch (type) {
+            case 'ProfilePhoto':
+                return 'Profile Photo';
+            case 'AddressProof':
+                return 'Address Proof';
+            case 'IdentityProof':
+                return 'ID Proof';
+            default:
+                return type || 'Document';
         }
     };
 
@@ -81,11 +152,11 @@ export default function CitizenDocumentsPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">My Documents</h1>
-                        <p className="text-xs sm:text-sm text-muted-foreground">Manage your identification and medical records.</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Manage your identification and records.</p>
                     </div>
                     <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
                         <DialogTrigger asChild>
-                            <Button className="w-full sm:w-auto text-xs sm:text-sm">
+                            <Button className="w-full sm:w-auto text-xs sm:text-sm bg-gradient-to-r from-[#0F52BA] to-[#720924] text-white hover:opacity-95">
                                 <Upload className="mr-2 h-4 w-4" />
                                 Upload Document
                             </Button>
@@ -125,7 +196,7 @@ export default function CitizenDocumentsPage() {
                                 </div>
                                 <div className="flex justify-end gap-3">
                                     <Button type="button" variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
-                                    <Button type="submit" disabled={uploading || !selectedFile}>
+                                    <Button type="submit" disabled={uploading || !selectedFile} className="bg-[#0F52BA] text-white">
                                         {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Upload'}
                                     </Button>
                                 </div>
@@ -136,32 +207,79 @@ export default function CitizenDocumentsPage() {
 
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {documents.length > 0 ? (
-                        documents.map((doc) => (
-                            <Card key={doc.id}>
-                                <CardContent className="p-4">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="rounded-lg bg-slate-100 p-2 text-slate-600">
-                                                <FileText className="h-6 w-6" />
+                        documents.map((doc) => {
+                            const displayName = doc.documentName || doc.fileName || formatDocTypeLabel(doc.documentType);
+                            const uploadDate = doc.uploadedAt || doc.createdAt;
+                            const isDeleting = deletingId === doc.id;
+
+                            return (
+                                <Card key={doc.id} className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow bg-white">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                                                <div className="rounded-xl bg-blue-50 p-2.5 text-[#0F52BA] shrink-0 border border-blue-100">
+                                                    <FileText className="h-5 w-5" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-semibold text-sm text-slate-900 truncate" title={displayName}>
+                                                        {displayName}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getDocTypeBadgeStyle(doc.documentType)}`}>
+                                                            {formatDocTypeLabel(doc.documentType)}
+                                                        </span>
+                                                        {doc.fileSize && (
+                                                            <span className="text-[11px] text-slate-500 font-mono">
+                                                                {formatFileSize(doc.fileSize)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-400 mt-1.5">
+                                                        {uploadDate ? new Date(uploadDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Recently added'}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-medium truncate max-w-[150px]" title={doc.fileName}>{doc.documentType}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {new Date(doc.createdAt).toLocaleDateString()}
-                                                </p>
+
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    title="View Document"
+                                                    className="h-8 w-8 text-slate-600 hover:text-[#0F52BA] hover:bg-blue-50"
+                                                    onClick={() => apiClient.viewDocument(doc.fileUrl)}
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    title="Delete Document"
+                                                    disabled={isDeleting}
+                                                    className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                                    onClick={() => handleDelete(doc.id, displayName)}
+                                                >
+                                                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin text-rose-500" /> : <Trash2 className="h-4 w-4" />}
+                                                </Button>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="icon" onClick={() => apiClient.viewDocument(doc.fileUrl)}>
-                                            <Eye className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))
+                                    </CardContent>
+                                </Card>
+                            );
+                        })
                     ) : (
-                        <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-                            <FileText className="mb-4 h-10 w-10 text-slate-300" />
-                            <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
+                        <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center bg-slate-50/50">
+                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-400">
+                                <FileText className="h-6 w-6" />
+                            </div>
+                            <p className="font-semibold text-slate-700 text-base">No documents uploaded yet</p>
+                            <p className="text-xs text-slate-500 mt-1 max-w-sm">Upload your identity proof, address proof, or medical records for fast verification and access.</p>
+                            <Button
+                                onClick={() => setUploadOpen(true)}
+                                size="sm"
+                                className="mt-4 bg-[#0F52BA] text-white hover:bg-[#0F52BA]/90"
+                            >
+                                <Upload className="mr-2 h-4 w-4" /> Upload Now
+                            </Button>
                         </div>
                     )}
                 </div>

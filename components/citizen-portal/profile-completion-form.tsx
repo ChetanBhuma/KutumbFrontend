@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Webcam from 'react-webcam';
-import { AlertCircle, CheckCircle2, ChevronRight, ChevronLeft, Loader2, Upload, MapPin, Camera, X, User, Plus, Trash2, Eye, FileText } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, ChevronLeft, Loader2, Upload, MapPin, Camera, X, User, Plus, Trash2, Eye, FileText, Home } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { calculateProfileCompleteness } from '@/lib/utils';
@@ -49,6 +49,7 @@ export default function ProfileCompletionForm() {
         fullName: '',
         dob: '',
         gender: '',
+        aadhaarNumber: '',
         occupation: '',
         yearOfRetirement: '',
         retiredFrom: '',
@@ -247,23 +248,45 @@ export default function ProfileCompletionForm() {
                     // ... (Using existing mapping logic but expanded)
                     const clean = (val: string, placeholder: string) => (val === placeholder ? '' : val);
 
+                    const normalizeGender = (g?: string) => {
+                        if (!g || g === 'Unknown') return '';
+                        const lower = g.trim().toLowerCase();
+                        if (lower === 'male') return 'Male';
+                        if (lower === 'female') return 'Female';
+                        if (lower === 'other') return 'Other';
+                        return g;
+                    };
+
+                    const normalizeReligion = (r?: string) => {
+                        if (!r) return '';
+                        const trimmed = r.trim();
+                        if (!trimmed) return '';
+                        const standard = ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Jain', 'Buddhist', 'Other'];
+                        const matchedStd = standard.find(s => s.toLowerCase() === trimmed.toLowerCase());
+                        if (matchedStd) return matchedStd;
+                        return trimmed;
+                    };
+
                     setFormData((prev: any) => ({
                         ...prev,
                         fullName: clean(c.fullName || '', 'Unknown'),
                         photoUrl: c.photoUrl || '',
                         addressProofUrl: c.addressProofUrl || '', // Map address proof URL
                         dob: c.dateOfBirth ? new Date(c.dateOfBirth).toISOString().split('T')[0] : '',
-                        gender: clean(c.gender || '', 'Other'),
+                        gender: normalizeGender(c.gender),
+                        aadhaarNumber: c.aadhaarNumber || '',
                         mobileNumber: c.mobileNumber || '',
                         maritalStatus: c.maritalStatus || '',
                         occupation: c.occupation || '',
                         yearOfRetirement: c.yearOfRetirement || '',
                         retiredFrom: c.retiredFrom || '',
                         specialization: c.specialization || '',
-                        religion: c.religion || '',
+                        religion: normalizeReligion(c.religion),
 
-
-
+                        gpsLatitude: c.gpsLatitude ?? null,
+                        gpsLongitude: c.gpsLongitude ?? null,
+                        gpsAccuracy: c.gpsAccuracy ?? null,
+                        gpsCapturedAt: c.gpsCapturedAt ?? null,
 
                         telephoneNumber: c.telephoneNumber || '',
                         alternateMobile: c.alternateMobile || '',
@@ -526,6 +549,7 @@ export default function ProfileCompletionForm() {
                 fullName: formData.fullName,
                 dateOfBirth: formData.dob,
                 gender: formData.gender,
+                aadhaarNumber: formData.aadhaarNumber || null,
                 maritalStatus: formData.maritalStatus || null,
                 religion: formData.religion || null,
                 occupation: formData.occupation || null,
@@ -781,6 +805,16 @@ export default function ProfileCompletionForm() {
                                         )}
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Aadhaar (Last 4 digits - Optional)</Label>
+                                <Input
+                                    value={formData.aadhaarNumber}
+                                    onChange={e => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                    placeholder="XXXX"
+                                    maxLength={4}
+                                    className="font-mono"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Marital Status</Label>
