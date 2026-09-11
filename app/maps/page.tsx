@@ -12,6 +12,9 @@ import { Loader2, Filter, Map as MapIcon, Layers } from 'lucide-react';
 import apiClient from '@/lib/api-client';
 import { useApiQuery } from '@/hooks/use-api-query';
 import { useMasterData } from '@/hooks/use-master-data';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
+import { isShoOrInspectorUser } from '@/lib/utils';
 import { CitizenDetailSheet } from '@/components/citizens/citizen-detail-sheet';
 
 interface District {
@@ -33,6 +36,15 @@ interface Beat {
 }
 
 export default function MapsPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const isShoOrInspector = isShoOrInspectorUser(user);
+
+  useEffect(() => {
+    if (isShoOrInspector) {
+      router.replace('/admin/dashboard');
+    }
+  }, [isShoOrInspector, router]);
   // Layer States
   const [layers, setLayers] = useState({
     showDistricts: true,

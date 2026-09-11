@@ -49,7 +49,7 @@ import {
   List,
   UserCog,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, isShoOrInspectorUser } from "@/lib/utils"
 
 interface NavItem {
   title: string
@@ -287,14 +287,30 @@ export function Sidebar({ currentPath }: SidebarProps) {
     })
   }
 
+  const isShoOrInspector = isShoOrInspectorUser(user)
+
   const hasItemPermission = (item: NavItem): boolean => {
     if (!item.permission) return true
     return hasPermission(item.permission.resource, item.permission.action)
   }
 
   const filterNavItems = (items: NavItem[]): NavItem[] => {
-    return items
-      .filter((item) => hasItemPermission(item))
+    let filtered = items
+      .filter((item) => {
+        if (isShoOrInspector) {
+          if (
+            item.title === "Citizen Map" ||
+            item.title === "Jurisdiction Map" ||
+            item.href === "/citizens/map" ||
+            item.href === "/citizens/map/pending" ||
+            item.href === "/maps" ||
+            item.href === "/maps/jurisdiction"
+          ) {
+            return false
+          }
+        }
+        return hasItemPermission(item)
+      })
       .map((item) => {
         if (item.children) {
           const filteredChildren = filterNavItems(item.children)
@@ -304,7 +320,19 @@ export function Sidebar({ currentPath }: SidebarProps) {
         return item
       })
       .filter((item): item is NavItem => item !== null)
+
+    if (isShoOrInspector) {
+      const approvalIndex = filtered.findIndex((i) => i.href === "/approvals" || i.title === "Registration Approvals")
+      const dashboardIndex = filtered.findIndex((i) => i.href === "/admin/dashboard" || i.title === "Dashboard")
+      if (approvalIndex !== -1 && dashboardIndex !== -1 && approvalIndex !== dashboardIndex + 1) {
+        const [approvalItem] = filtered.splice(approvalIndex, 1)
+        filtered.splice(dashboardIndex + 1, 0, approvalItem)
+      }
+    }
+
+    return filtered
   }
+
 
   const filteredNavItems = filterNavItems(navigationItems)
 

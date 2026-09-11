@@ -30,11 +30,6 @@ export function useSecureImage(imageUrl: string | null | undefined) {
         }
 
         // 3. Handle external URLs (not hosted on our backend)
-        // Heuristic: If it starts with http/https but not our own origin (roughly)
-        // Actually, the simplest check is if it doesn't look like a relative upload path and is absolute.
-        // But if it points to our backend (localhost:5000), we DO want to fetch securely.
-        // So we should only skip if it's definitely 3rd party public image.
-        // For now, let's assume anything starting with http that isn't localhost is external.
         const isExternal = imageUrl.startsWith('http') && !imageUrl.includes('localhost') && !imageUrl.includes('127.0.0.1');
         if (isExternal) {
             setSecureUrl(imageUrl);
@@ -48,24 +43,32 @@ export function useSecureImage(imageUrl: string | null | undefined) {
         const fetchImage = async () => {
             setLoading(true);
             try {
-                const token = localStorage.getItem('accessToken');
-                if (!token) {
-                    throw new Error('No access token found');
+                const token = typeof window !== 'undefined'
+                    ? (localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('citizenToken'))
+                    : null;
+
+                // Normalize backslashes from Windows paths
+                const normalizedPath = imageUrl.replace(/\\/g, '/');
+                const fetchUrl = normalizedPath.startsWith('/') || normalizedPath.startsWith('http')
+                    ? normalizedPath
+                    : `/${normalizedPath}`;
+
+                const headers: Record<string, string> = {};
+                if (token && token !== 'null' && token !== 'undefined') {
+                    headers['Authorization'] = `Bearer ${token}`;
                 }
 
-                // Append leading slash if missing for relative paths
-                const fetchUrl = imageUrl.startsWith('/') || imageUrl.startsWith('http')
-                    ? imageUrl
-                    : `/${imageUrl}`;
-
                 const response = await fetch(fetchUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers,
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to load image: ${response.status} ${response.statusText}`);
+                    if (isActive) {
+                        setError(new Error(`Image status: ${response.status}`));
+                        setSecureUrl(null);
+                    }
+                    return;
                 }
 
                 const blob = await response.blob();
@@ -75,11 +78,7 @@ export function useSecureImage(imageUrl: string | null | undefined) {
                 }
             } catch (err: any) {
                 if (isActive) {
-                    console.error("Error fetching secure image:", err);
                     setError(err);
-                    // Fallback: try showing the original URL in case it works (e.g. if auth wasn't actually required or if it's cached)
-                    // But if it failed with 403, it won't work.
-                    // Let's explicitly set partial secureUrl or just null
                     setSecureUrl(null);
                 }
             } finally {
@@ -104,3 +103,4 @@ export function useSecureImage(imageUrl: string | null | undefined) {
 
     return { secureUrl, loading, error };
 }
+

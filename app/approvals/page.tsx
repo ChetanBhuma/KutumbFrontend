@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     FileCheck,
     Search,
@@ -31,6 +30,7 @@ import {
     CheckCircle2,
     Loader2
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import apiClient from '@/lib/api-client';
 import { format } from 'date-fns';
 import { RegistrationFilter } from './components/registration-filter';
@@ -147,6 +147,73 @@ export default function ApprovalsPage() {
         };
     }, [responseData, statsData]);
 
+    const kpiItems = [
+        {
+            id: 'total',
+            title: 'Total Applications',
+            value: stats.total.toLocaleString(),
+            subtext: 'All submissions',
+            icon: FileCheck,
+            borderClass: 'border-l-blue-500 hover:border-blue-600',
+            cardBg: 'bg-gradient-to-br from-blue-50/60 via-white to-slate-50/40 dark:from-blue-950/20 dark:via-slate-900 dark:to-slate-950',
+            activeCardBg: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25',
+            iconBg: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+            countBadge: 'bg-blue-50/90 text-blue-700 border border-blue-200/70 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/60',
+            active: filters.status === 'all',
+            onClick: () => {
+                setFilters(prev => ({ ...prev, status: 'all' }));
+            },
+        },
+        {
+            id: 'pending',
+            title: 'Pending Review',
+            value: stats.pending.toLocaleString(),
+            subtext: 'Awaiting action',
+            icon: Clock,
+            borderClass: 'border-l-amber-500 hover:border-amber-600',
+            cardBg: 'bg-gradient-to-br from-amber-50/60 via-white to-slate-50/40 dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-950',
+            activeCardBg: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25',
+            iconBg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+            countBadge: 'bg-amber-50/90 text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60',
+            active: filters.status === 'pending',
+            onClick: () => {
+                setFilters(prev => ({ ...prev, status: prev.status === 'pending' ? 'all' : 'pending' }));
+            },
+        },
+        {
+            id: 'approved',
+            title: 'Approved',
+            value: stats.approved.toLocaleString(),
+            subtext: 'Approved records',
+            icon: CheckCircle2,
+            borderClass: 'border-l-emerald-500 hover:border-emerald-600',
+            cardBg: 'bg-gradient-to-br from-emerald-50/60 via-white to-slate-50/40 dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-950',
+            activeCardBg: 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25',
+            iconBg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+            countBadge: 'bg-emerald-50/90 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60',
+            active: filters.status === 'approved',
+            onClick: () => {
+                setFilters(prev => ({ ...prev, status: prev.status === 'approved' ? 'all' : 'approved' }));
+            },
+        },
+        {
+            id: 'rejected',
+            title: 'Rejected',
+            value: stats.rejected.toLocaleString(),
+            subtext: 'Rejected records',
+            icon: XCircle,
+            borderClass: 'border-l-rose-500 hover:border-rose-600',
+            cardBg: 'bg-gradient-to-br from-rose-50/60 via-white to-slate-50/40 dark:from-rose-950/20 dark:via-slate-900 dark:to-slate-950',
+            activeCardBg: 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-md shadow-rose-500/25',
+            iconBg: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
+            countBadge: 'bg-rose-50/90 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/60',
+            active: filters.status === 'rejected',
+            onClick: () => {
+                setFilters(prev => ({ ...prev, status: prev.status === 'rejected' ? 'all' : 'rejected' }));
+            },
+        },
+    ];
+
     return (
         <ProtectedRoute permissionCode="citizens.approve">
             <DashboardLayout
@@ -154,65 +221,75 @@ export default function ApprovalsPage() {
                 description="Review and approve senior citizen registration applications"
                 currentPath="/approvals"
             >
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold flex items-center gap-2">
-                            <FileCheck className="h-8 w-8" />
-                            Registration Approvals
-                        </h1>
-                        <p className="text-muted-foreground">Inbox for senior citizen registration applications</p>
-                    </div>
-                </div>
-
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Total Applications</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{stats.total}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Review</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Approved</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-green-600">{stats.approved}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Rejected</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-red-600">{stats.rejected}</div>
-                        </CardContent>
-                    </Card>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-5">
+                    {kpiItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Card
+                                key={item.id}
+                                onClick={item.onClick}
+                                className={cn(
+                                    'group relative shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer backdrop-blur-sm select-none hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] overflow-hidden',
+                                    item.active
+                                        ? cn('border-0 ring-0', item.activeCardBg)
+                                        : cn('border border-slate-200/70 dark:border-slate-800 border-l-[3.5px]', item.borderClass, item.cardBg)
+                                )}
+                            >
+                                <CardContent className="p-2.5 px-3">
+                                    <div className="flex items-center justify-between gap-2.5">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div
+                                                className={cn(
+                                                    'p-1.5 rounded-md shrink-0 transition-transform group-hover:scale-105 shadow-xs',
+                                                    item.active ? 'bg-white/20 text-white' : item.iconBg
+                                                )}
+                                            >
+                                                <Icon className="h-3.5 w-3.5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p
+                                                    className={cn(
+                                                        'text-xs font-semibold tracking-tight truncate leading-tight transition-colors',
+                                                        item.active
+                                                            ? 'text-white font-bold'
+                                                            : 'text-slate-800 dark:text-slate-200 group-hover:text-primary'
+                                                    )}
+                                                >
+                                                    {item.title}
+                                                </p>
+                                                <p
+                                                    className={cn(
+                                                        'text-[10px] truncate leading-tight mt-0.5 font-medium',
+                                                        item.active ? 'text-white/85' : 'text-muted-foreground'
+                                                    )}
+                                                >
+                                                    {item.subtext}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="shrink-0">
+                                            <div
+                                                className={cn(
+                                                    'text-base font-black px-2 py-0.5 rounded-md tracking-tight shadow-xs min-w-[2.2rem] text-center transition-transform group-hover:scale-105',
+                                                    item.active
+                                                        ? 'bg-white text-slate-900 border-0 shadow-sm'
+                                                        : item.countBadge
+                                                )}
+                                            >
+                                                {item.value}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
 
                 {/* Filters */}
                 <RegistrationFilter onFilterChange={handleFilterChange} />
-
-                {/* Tabs */}
-                <Tabs value={filters.status} onValueChange={(val) => setFilters(prev => ({ ...prev, status: val }))} className="mb-6">
-                    <TabsList>
-                        <TabsTrigger value="pending">Pending Review</TabsTrigger>
-                        <TabsTrigger value="approved">Approved</TabsTrigger>
-                        <TabsTrigger value="rejected">Rejected</TabsTrigger>
-                        <TabsTrigger value="all">All</TabsTrigger>
-                    </TabsList>
-                </Tabs>
 
                 {/* Table */}
                 <Card>
@@ -230,8 +307,8 @@ export default function ApprovalsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Application ID</TableHead>
                                     <TableHead>Applicant Name</TableHead>
+                                    <TableHead>Age</TableHead>
                                     <TableHead>Mobile Number</TableHead>
                                     <TableHead>District</TableHead>
                                     <TableHead>Submitted On</TableHead>
@@ -240,32 +317,35 @@ export default function ApprovalsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {registrations.map((registration: Registration, index: number) => (
-                                    <TableRow key={registration.id || `reg-${index}`}>
-                                        <TableCell className="font-mono text-sm">{registration.id?.substring(0, 8) || 'N/A'}...</TableCell>
-                                        <TableCell className="font-medium">{registration.fullName || 'N/A'}</TableCell>
-                                        <TableCell>{registration.mobileNumber}</TableCell>
-                                        <TableCell>{(registration.citizen as any)?.District?.name || 'N/A'}</TableCell>
-                                        <TableCell>
-                                            {(() => {
-                                                if (!registration.createdAt) return 'N/A';
-                                                const date = new Date(registration.createdAt);
-                                                return isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'dd MMM yyyy, hh:mm a');
-                                            })()}
-                                        </TableCell>
-                                        <TableCell>{getStatusBadge(registration.status)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => router.push(`/approvals/${registration.id}`)}
-                                            >
-                                                <Eye className="h-4 w-4 mr-1" />
-                                                Review
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {registrations.map((registration: Registration, index: number) => {
+                                    const age = registration.citizen?.age ?? (registration as any)?.age;
+                                    return (
+                                        <TableRow key={registration.id || `reg-${index}`}>
+                                            <TableCell className="font-medium">{registration.fullName || 'N/A'}</TableCell>
+                                            <TableCell>{age ? `${age} yrs` : 'N/A'}</TableCell>
+                                            <TableCell>{registration.mobileNumber}</TableCell>
+                                            <TableCell>{(registration.citizen as any)?.District?.name || 'N/A'}</TableCell>
+                                            <TableCell>
+                                                {(() => {
+                                                    if (!registration.createdAt) return 'N/A';
+                                                    const date = new Date(registration.createdAt);
+                                                    return isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'dd MMM yyyy, hh:mm a');
+                                                })()}
+                                            </TableCell>
+                                            <TableCell>{getStatusBadge(registration.status)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => router.push(`/approvals/${registration.id}`)}
+                                                >
+                                                    <Eye className="h-4 w-4 mr-1" />
+                                                    Review
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     )}

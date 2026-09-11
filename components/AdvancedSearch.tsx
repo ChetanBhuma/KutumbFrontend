@@ -120,12 +120,12 @@ export default function AdvancedSearch({ onSearch, onReset, loading, resultCount
                         {/* Gender */}
                         <div>
                             <Label>Gender</Label>
-                            <Select value={filters.gender || ''} onValueChange={(val) => updateFilter('gender', val)}>
+                            <Select value={filters.gender || 'all'} onValueChange={(val) => updateFilter('gender', val === 'all' ? undefined : val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Genders" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">All Genders</SelectItem>
+                                    <SelectItem value="all">All Genders</SelectItem>
                                     <SelectItem value="Male">Male</SelectItem>
                                     <SelectItem value="Female">Female</SelectItem>
                                     <SelectItem value="Other">Other</SelectItem>
@@ -136,12 +136,12 @@ export default function AdvancedSearch({ onSearch, onReset, loading, resultCount
                         {/* Vulnerability Level */}
                         <div>
                             <Label>Vulnerability Level</Label>
-                            <Select value={filters.vulnerabilityLevel || ''} onValueChange={(val) => updateFilter('vulnerabilityLevel', val)}>
+                            <Select value={filters.vulnerabilityLevel || 'all'} onValueChange={(val) => updateFilter('vulnerabilityLevel', val === 'all' ? undefined : val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Levels" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">All Levels</SelectItem>
+                                    <SelectItem value="all">All Levels</SelectItem>
                                     <SelectItem value="High">High Risk</SelectItem>
                                     <SelectItem value="Medium">Medium Risk</SelectItem>
                                     <SelectItem value="Low">Low Risk</SelectItem>
@@ -152,12 +152,12 @@ export default function AdvancedSearch({ onSearch, onReset, loading, resultCount
                         {/* Living Arrangement */}
                         <div>
                             <Label>Living Arrangement</Label>
-                            <Select value={filters.livingArrangement || ''} onValueChange={(val) => updateFilter('livingArrangement', val)}>
+                            <Select value={filters.livingArrangement || 'all'} onValueChange={(val) => updateFilter('livingArrangement', val === 'all' ? undefined : val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Arrangements" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">All Arrangements</SelectItem>
+                                    <SelectItem value="all">All Arrangements</SelectItem>
                                     <SelectItem value="Alone">Living Alone</SelectItem>
                                     <SelectItem value="With Spouse">With Spouse</SelectItem>
                                     <SelectItem value="With Family">With Family</SelectItem>
@@ -169,12 +169,12 @@ export default function AdvancedSearch({ onSearch, onReset, loading, resultCount
                         {/* Verification Status */}
                         <div>
                             <Label>Verification Status</Label>
-                            <Select value={filters.verificationStatus || ''} onValueChange={(val) => updateFilter('verificationStatus', val)}>
+                            <Select value={filters.verificationStatus || 'all'} onValueChange={(val) => updateFilter('verificationStatus', val === 'all' ? undefined : val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Statuses" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">All Statuses</SelectItem>
+                                    <SelectItem value="all">All Statuses</SelectItem>
                                     <SelectItem value="Approved">Approved</SelectItem>
                                     <SelectItem value="Pending">Pending</SelectItem>
                                     <SelectItem value="Rejected">Rejected</SelectItem>
@@ -185,12 +185,12 @@ export default function AdvancedSearch({ onSearch, onReset, loading, resultCount
                         {/* Last Visit */}
                         <div>
                             <Label>Last Visit Within</Label>
-                            <Select value={filters.lastVisitDays?.toString() || ''} onValueChange={(val) => updateFilter('lastVisitDays', val ? parseInt(val) : undefined)}>
+                            <Select value={filters.lastVisitDays?.toString() || 'all'} onValueChange={(val) => updateFilter('lastVisitDays', val === 'all' ? undefined : (val ? parseInt(val) : undefined))}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Any Time" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Any Time</SelectItem>
+                                    <SelectItem value="all">Any Time</SelectItem>
                                     <SelectItem value="7">Last 7 days</SelectItem>
                                     <SelectItem value="14">Last 14 days</SelectItem>
                                     <SelectItem value="30">Last 30 days</SelectItem>

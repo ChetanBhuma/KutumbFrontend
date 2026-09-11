@@ -12,7 +12,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-import { Loader2, Plus, Trash2, CheckCircle2, Eye, Upload, Camera, User, MapPin, ChevronLeft, ChevronRight, AlertTriangle, X } from 'lucide-react';
+import {
+    Loader2, Plus, Trash2, CheckCircle2, Eye, Upload, Camera,
+    User, MapPin, ChevronLeft, ChevronRight, AlertTriangle, X, Home,
+    Users, UserCheck, Heart, ClipboardCheck, FileCheck
+} from 'lucide-react';
 import { useMasterData } from '@/hooks/use-master-data';
 import { useClientDate } from '@/hooks/use-client-date';
 import { useToast } from '@/components/ui/use-toast';
@@ -21,13 +25,13 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useSecureImage } from '@/hooks/use-secure-image';
 
 const STEPS = [
-    { id: 1, title: 'Personal Info', description: 'Basic details & Identity' },
-    { id: 2, title: 'Contact & Address', description: 'Where can we find you?' },
-    { id: 3, title: 'Family Details', description: 'Spouse & Family Members' },
-    { id: 4, title: 'Household Staff', description: 'Domestic help, Driver, etc.' },
-    { id: 5, title: 'Health', description: 'Medical information' },
-    { id: 6, title: 'Review', description: 'Confirm details' },
-    { id: 7, title: 'Declaration', description: 'Consent & Final Submit' }
+    { id: 1, title: 'Personal Info', description: 'Basic details & Identity', icon: User },
+    { id: 2, title: 'Contact & Address', description: 'Where can we find you?', icon: MapPin },
+    { id: 3, title: 'Family Details', description: 'Spouse & Family Members', icon: Users },
+    { id: 4, title: 'Household Staff', description: 'Domestic help, Driver, etc.', icon: UserCheck },
+    { id: 5, title: 'Health', description: 'Medical information', icon: Heart },
+    { id: 6, title: 'Review', description: 'Confirm details', icon: ClipboardCheck },
+    { id: 7, title: 'Declaration', description: 'Consent & Final Submit', icon: FileCheck }
 ];
 
 interface CitizenFormProps {
@@ -681,38 +685,65 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
         <div className="space-y-6 max-w-5xl mx-auto">
 
             {/* Progress Header */}
-            <Card>
-                <CardHeader className="pb-4">
-                    <div className="flex justify-between items-center mb-4">
-                        <CardTitle>Step {step} of {STEPS.length}: {STEPS[step - 1].title}</CardTitle>
-                        <span className="text-sm text-muted-foreground">{Math.round((step / STEPS.length) * 100)}%</span>
+            <Card className="border border-slate-200/90 shadow-sm bg-white overflow-hidden rounded-2xl">
+                <CardHeader className="p-4 sm:p-6 pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">
+                                {mode === 'edit' ? 'Edit Citizen Profile' : 'Citizen Registration'}
+                            </span>
+                            <CardTitle className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2 mt-0.5">
+                                Step {step} of {STEPS.length}: {STEPS[step - 1].title}
+                            </CardTitle>
+                            <p className="text-xs text-slate-500 mt-0.5">{STEPS[step - 1].description}</p>
+                        </div>
+                        <div className="flex items-center gap-2 self-start sm:self-center">
+                            <span className="text-xs font-bold font-mono px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                                {Math.round((step / STEPS.length) * 100)}% Completed
+                            </span>
+                        </div>
                     </div>
 
-                    {/* Detailed Tab UI */}
-                    <div className="flex gap-2 text-sm text-muted-foreground overflow-x-auto pb-2 scrollbar-hide">
-                        {STEPS.map(s => (
-                            <div
-                                key={s.id}
-                                onClick={() => { if (s.id < step) setStep(s.id); }}
-                                className={`whitespace-nowrap px-3 py-1 rounded-full cursor-pointer transition-colors ${step === s.id
-                                    ? 'bg-blue-600 text-white font-medium'
-                                    : step > s.id
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : 'bg-slate-100 text-slate-500'
+                    {/* Rich Application Theme Step Tabs */}
+                    <div className="bg-slate-100/95 border border-slate-200 p-1.5 rounded-xl shadow-2xs flex gap-1.5 overflow-x-auto no-scrollbar">
+                        {STEPS.map(s => {
+                            const Icon = s.icon;
+                            const isActive = step === s.id;
+                            const isCompleted = step > s.id;
+                            return (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    onClick={() => { setStep(s.id); }}
+                                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none shrink-0 ${
+                                        isActive
+                                            ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 text-white shadow-md'
+                                            : isCompleted
+                                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100/80'
+                                                : 'text-slate-700 hover:text-indigo-900 hover:bg-slate-200/60'
                                     }`}
-                            >
-                                {s.id}. {s.title}
-                            </div>
-                        ))}
+                                >
+                                    {isCompleted ? (
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                                    ) : (
+                                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-indigo-600'}`} />
+                                    )}
+                                    <span>{s.title}</span>
+                                </button>
+                            );
+                        })}
                     </div>
 
-                    <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mt-4">
-                        <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${(step / STEPS.length) * 100}%` }} />
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-4 border border-slate-200">
+                        <div
+                            className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 transition-all duration-300 rounded-full shadow-xs"
+                            style={{ width: `${(step / STEPS.length) * 100}%` }}
+                        />
                     </div>
                 </CardHeader>
             </Card>
 
-            <Card className="min-h-[500px] flex flex-col">
+            <Card className="min-h-[500px] flex flex-col border border-slate-200/90 shadow-sm bg-white rounded-2xl overflow-hidden">
                 <CardContent className="flex-1 p-6 space-y-6">
 
                     {/* STEP 1: PERSONAL */}
@@ -1256,14 +1287,30 @@ export function CitizenForm({ mode, citizenId, onSuccess }: CitizenFormProps) {
 
 
                 </CardContent>
-                <CardFooter className="flex justify-between border-t p-6 bg-slate-50/50">
-                    <Button variant="outline" onClick={handlePrev} disabled={step === 1}>Previous</Button>
+                <CardFooter className="flex justify-between border-t p-4 sm:p-6 bg-slate-50/70 rounded-b-2xl">
+                    <Button
+                        variant="outline"
+                        onClick={handlePrev}
+                        disabled={step === 1}
+                        className="text-xs font-bold gap-1.5"
+                    >
+                        <ChevronLeft className="h-4 w-4" /> Previous
+                    </Button>
                     {step < STEPS.length ? (
-                        <Button onClick={handleNext}>Next</Button>
+                        <Button
+                            onClick={handleNext}
+                            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold text-xs gap-1.5 shadow-md hover:shadow-lg transition-all"
+                        >
+                            Next <ChevronRight className="h-4 w-4" />
+                        </Button>
                     ) : (
-                        <Button onClick={handleSubmit} disabled={saving || !formData.consentDataUse}>
-                            {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                            Final Submit
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={saving || !formData.consentDataUse}
+                            className="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs gap-1.5 shadow-md hover:shadow-lg transition-all"
+                        >
+                            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                            {mode === 'edit' ? 'Update Citizen Profile' : 'Final Submit'}
                         </Button>
                     )}
                 </CardFooter>

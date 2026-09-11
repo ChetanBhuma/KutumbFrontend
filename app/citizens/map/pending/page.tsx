@@ -13,6 +13,8 @@ import apiClient from '@/lib/api-client';
 import { CitizenDetailSheet } from '@/components/citizens/citizen-detail-sheet';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/protected-route';
+import { useAuth } from '@/contexts/auth-context';
+import { isShoOrInspectorUser } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useMasterData } from '@/hooks/use-master-data';
 
@@ -36,6 +38,14 @@ interface Beat {
 
 export default function PendingVerificationMapPage() {
     const router = useRouter();
+    const { user } = useAuth();
+    const isShoOrInspector = isShoOrInspectorUser(user);
+
+    useEffect(() => {
+        if (isShoOrInspector) {
+            router.replace('/citizens');
+        }
+    }, [isShoOrInspector, router]);
     // Layer States
     const [layers, setLayers] = useState({
         showDistricts: true,
@@ -165,9 +175,11 @@ export default function PendingVerificationMapPage() {
                         <p className="text-muted-foreground">Citizens awaiting verification review</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => router.push('/citizens/map')}>
-                            All Citizens
-                        </Button>
+                        {!isShoOrInspector && (
+                            <Button variant="outline" onClick={() => router.push('/citizens/map')}>
+                                All Citizens
+                            </Button>
+                        )}
                         <Button variant="outline" onClick={() => router.push('/citizens')}>
                             <List className="h-4 w-4 mr-2" /> List View
                         </Button>

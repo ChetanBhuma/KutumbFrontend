@@ -14,6 +14,8 @@ import apiClient from '@/lib/api-client';
 import { CitizenDetailSheet } from '@/components/citizens/citizen-detail-sheet';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/protected-route';
+import { useAuth } from '@/contexts/auth-context';
+import { isShoOrInspectorUser } from '@/lib/utils';
 import { useMasterData } from '@/hooks/use-master-data';
 import { useToast } from '@/components/ui/use-toast';
 import { storage, useDebounce, performanceMonitor } from '@/lib/performance';
@@ -104,8 +106,16 @@ const saveFilters = (range: string, district: string, ps: string, beat: string) 
 
 export default function CitizenMapPage() {
     const router = useRouter();
+    const { user } = useAuth();
+    const isShoOrInspector = isShoOrInspectorUser(user);
     const { toast } = useToast();
     const isMountedRef = useRef(false);
+
+    useEffect(() => {
+        if (isShoOrInspector) {
+            router.replace('/citizens');
+        }
+    }, [isShoOrInspector, router]);
 
     // Layer States (initialized with default, loaded in useEffect)
     const [layers, setLayers] = useState<LayerSettings>(DEFAULT_LAYERS);
@@ -507,14 +517,16 @@ export default function CitizenMapPage() {
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() =>
-                                router.push('/citizens/map/pending')
-                            }
-                        >
-                            Pending Verification
-                        </Button>
+                        {!isShoOrInspector && (
+                            <Button
+                                variant="outline"
+                                onClick={() =>
+                                    router.push('/citizens/map/pending')
+                                }
+                            >
+                                Pending Verification
+                            </Button>
+                        )}
                         <Button
                             variant="outline"
                             onClick={() => router.push('/citizens')}

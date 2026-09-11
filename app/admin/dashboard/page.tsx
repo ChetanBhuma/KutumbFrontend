@@ -1,48 +1,53 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { useApiQuery } from "@/hooks/use-api-query"
 import apiClient from "@/lib/api-client"
-import { StatsCard } from "@/components/dashboard/stats-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SHOAssignmentModal, AssignModalItem } from "@/components/dashboard/sho-assignment-modal"
+import { SHOAlertRibbon } from "@/components/dashboard/sho/sho-alert-ribbon"
+import { SHOKpiGrid } from "@/components/dashboard/sho/sho-kpi-grid"
+import { SHOVerificationTab } from "@/components/dashboard/sho/tabs/sho-verification-tab"
+import { SHORevisitTab } from "@/components/dashboard/sho/tabs/sho-revisit-tab"
+import { SHOSosTab } from "@/components/dashboard/sho/tabs/sho-sos-tab"
+import { SHORosterTab } from "@/components/dashboard/sho/tabs/sho-roster-tab"
+import { SHOOfficerLeaderboard } from "@/components/dashboard/sho/sho-officer-leaderboard"
 import {
-  Users,
-  UserCheck,
-  UserX,
-  MapPin,
-  FileText,
-  AlertTriangle,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  RefreshCw,
-  Calendar,
-  Shield,
   ShieldCheck,
-  ArrowUpRight
+  RefreshCw,
+  Loader2,
+  AlertTriangle,
+  Siren,
+  Clock,
+  MapPin
 } from "lucide-react"
 
 function DashboardContent() {
-  // Current user context for role-based customization
   const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState<string>("verifications")
 
   // 1. Fetch real dashboard stats from API
-  const fetchStats = useCallback(() => apiClient.getDashboardStats(), [])
-  const { data: stats, loading, error, refetch: refetchStats } = useApiQuery(fetchStats, { refetchOnMount: true })
+  const fetchStats = useCallback(() => {
+    const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+    return apiClient.getDashboardStats(psId ? { policeStationId: psId } : undefined);
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
+  const { data: statsData, loading, error, refetch: refetchStats } = useApiQuery(fetchStats, { refetchOnMount: true })
+  const stats = statsData?.data || statsData
 
   // 2. Fetch pending verification requests (for SHO assignment)
   const fetchVerifications = useCallback(async () => {
     try {
-      const res: any = await apiClient.getVerificationRequests({ status: 'Pending' })
+      const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+      const res: any = await apiClient.getVerificationRequests({
+        status: 'Pending',
+        ...(psId ? { policeStationId: psId } : {})
+      })
       if (res.success) {
         return { data: res.data?.requests || res.data?.items || (Array.isArray(res.data) ? res.data : []) }
       }
@@ -50,24 +55,56 @@ function DashboardContent() {
     } catch {
       return { data: [] }
     }
-  }, [])
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
   const { data: verificationsData, loading: loadingVerifications, refetch: refetchVerifications } = useApiQuery(fetchVerifications, { refetchOnMount: true })
 
   // 3. Fetch pending re-visit & visit requests (for SHO assignment)
   const fetchVisitRequests = useCallback(async () => {
     try {
-      const res: any = await apiClient.getVisitRequests({ status: 'Pending' })
+      const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+      const res: any = await apiClient.getRevisitsDue({
+        ...(psId ? { policeStationId: psId } : {})
+      })
       if (res.success) {
-        return { data: res.data?.visitRequests || res.data?.items || (Array.isArray(res.data) ? res.data : []) }
+        return { data: res.data?.items || (Array.isArray(res.data) ? res.data : []) }
       }
       return { data: [] }
     } catch {
       return { data: [] }
     }
-  }, [])
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
   const { data: visitRequestsData, loading: loadingVisitRequests, refetch: refetchVisitRequests } = useApiQuery(fetchVisitRequests, { refetchOnMount: true })
 
-  // Modal State
+  // 4. Fetch SOS Alerts (for SHO police station)
+  const fetchSOS = useCallback(async () => {
+    try {
+      const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+      const res: any = await apiClient.get('/sos', {
+        params: {
+          limit: 100,
+          ...(psId ? { policeStationId: psId } : {})
+        }
+      })
+      if (res.success || res.data) {
+        return { data: res.data?.items || res.data?.alerts || (Array.isArray(res.data) ? res.data : []) }
+      }
+      return { data: [] }
+    } catch {
+      return { data: [] }
+    }
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
+  const { data: sosData, loading: loadingSOS, refetch: refetchSOS } = useApiQuery(fetchSOS, { refetchOnMount: true })
+
+  // Auto-polling for SOS alerts & counters (every 15 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchStats()
+      refetchSOS()
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [refetchStats, refetchSOS])
+
+  // Modal State for Officer Assignment
   const [modalItem, setModalItem] = useState<AssignModalItem | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -75,63 +112,44 @@ function DashboardContent() {
     refetchStats()
     refetchVerifications()
     refetchVisitRequests()
+    refetchSOS()
   }
 
-  // Open modal for Verification Assignment
-  const openVerificationAssignModal = (req: any) => {
-    const sc = req.SeniorCitizen || req.seniorCitizen
-    setModalItem({
-      type: 'VERIFICATION',
-      id: req.id,
-      citizenId: sc?.id || req.seniorCitizenId,
-      citizenName: sc?.fullName || 'Senior Citizen',
-      mobileNumber: sc?.mobileNumber,
-      policeStationId: sc?.policeStationId,
-      policeStationName: sc?.PoliceStation?.name || sc?.policeStationName,
-      defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      notes: req.remarks
-    })
+  const handleOpenAssignModal = (item: AssignModalItem) => {
+    setModalItem(item)
     setModalOpen(true)
   }
 
-  // Open modal for Re-visit Assignment
-  const openRevisitAssignModal = (req: any) => {
-    const sc = req.SeniorCitizen || req.seniorCitizen
-    setModalItem({
-      type: 'REVISIT',
-      id: req.id,
-      citizenId: sc?.id || req.seniorCitizenId,
-      citizenName: sc?.fullName || 'Senior Citizen',
-      mobileNumber: sc?.mobileNumber,
-      policeStationId: sc?.policeStationId,
-      policeStationName: sc?.PoliceStation?.name || sc?.policeStationName,
-      defaultDate: req.preferredDate,
-      visitType: req.visitType || 'Follow-up',
-      notes: req.notes
-    })
-    setModalOpen(true)
+  const handleSelectTab = (tab: string) => {
+    setActiveTab(tab)
+    setTimeout(() => {
+      const el = document.getElementById('operations-workbench')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 50)
   }
 
   // Loading state
-  if (loading) {
+  if (loading && !stats) {
     return (
       <div className="flex-1 flex items-center justify-center p-6 min-h-[60vh]">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground font-medium">Loading police station dashboard data...</p>
+          <p className="text-muted-foreground font-medium">Loading Station Command Center data...</p>
         </div>
       </div>
     )
   }
 
   // Error state
-  if (error) {
+  if (error && !stats) {
     return (
       <div className="flex-1 flex items-center justify-center p-6 min-h-[60vh]">
         <Alert variant="destructive" className="max-w-md shadow-lg">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
-            <span>Failed to load dashboard data</span>
+            <span>Failed to load station dashboard data</span>
             <Button variant="outline" size="sm" onClick={handleRefreshAll}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
@@ -142,419 +160,150 @@ function DashboardContent() {
     )
   }
 
-  // Extract KPI metrics
-  const totalCitizens = stats?.citizens?.total || 0
-  const totalOfficers = stats?.officers?.total || (stats?.officers?.assigned || 0) + (stats?.officers?.unassigned || 0)
-  const assignedOfficers = stats?.officers?.assigned || 0
-  const unassignedOfficers = stats?.officers?.unassigned || 0
-  const totalVisits = stats?.visits?.total || 0
-  const pendingVisits = stats?.visits?.pending || 0
-  const recentActivities = stats?.recentActivities || []
+  const pendingVerifications: any[] = Array.isArray(verificationsData) ? verificationsData : (verificationsData as any)?.data || []
+  const pendingVisitRequests: any[] = Array.isArray(visitRequestsData) ? visitRequestsData : (visitRequestsData as any)?.data || []
+  const activeSOSList: any[] = Array.isArray(sosData) ? sosData : (sosData as any)?.data || []
 
-  const pendingVerifications = verificationsData?.data || []
-
-  // Dynamic Dashboard Header info based on logged-in user role
-  const getDashboardHeader = () => {
-    const role = (user?.role || '').toUpperCase()
-
-    switch (role) {
-      case 'SUPER_ADMIN':
-        return {
-          title: 'Super Administrator Command Dashboard',
-          description: 'Global jurisdiction oversight, policy administration, station governance, and system-wide monitoring.',
-          queueTitle: 'Officer Assignment Queue',
-          queueDescription: 'Assign field officers for initial verifications and scheduled re-visits across jurisdictions.'
-        }
-      case 'ADMIN':
-        return {
-          title: 'Administrator Control Dashboard',
-          description: 'Administrative command, jurisdiction oversight, officer management, and operational analytics.',
-          queueTitle: 'Officer Assignment Queue',
-          queueDescription: 'Assign field officers for initial verifications and scheduled re-visits.'
-        }
-      case 'SHO':
-        return {
-          title: 'Station House Officer (SHO) Command Dashboard',
-          description: 'Real-time jurisdiction monitoring, officer workload allocation, and citizen verification queues.',
-          queueTitle: 'SHO Officer Assignment Queue',
-          queueDescription: 'Assign field officers mapped to this Police Station for initial verifications and scheduled re-visits.'
-        }
-      case 'INSPECTOR':
-        return {
-          title: 'Inspector Command Dashboard',
-          description: 'Jurisdiction supervision, officer task allocation, and inspection queues.',
-          queueTitle: 'Inspector Officer Assignment Queue',
-          queueDescription: 'Assign field officers mapped to this area for initial verifications and scheduled re-visits.'
-        }
-      case 'SUPERVISOR':
-        return {
-          title: 'Field Supervisor Dashboard',
-          description: 'Beat monitoring, officer visit tracking, and operational field oversight.',
-          queueTitle: 'Field Officer Assignment Queue',
-          queueDescription: 'Assign and track field officers for verifications and scheduled visits.'
-        }
-      case 'CONTROL_ROOM':
-        return {
-          title: 'Emergency & Control Room Dashboard',
-          description: 'Real-time SOS monitoring, emergency dispatch, and incident coordination.',
-          queueTitle: 'Officer Dispatch & Assignment Queue',
-          queueDescription: 'Monitor emergency response and officer task allocation.'
-        }
-      case 'OFFICER':
-      case 'BEAT_OFFICER':
-      case 'CONSTABLE':
-      case 'HEAD_CONSTABLE':
-      case 'ASI':
-      case 'SI':
-        return {
-          title: 'Officer Operations Dashboard',
-          description: 'Assigned beat operations, citizen safety monitoring, and visit schedules.',
-          queueTitle: 'Officer Assignment Queue',
-          queueDescription: 'Initial verifications and scheduled re-visits.'
-        }
-      case 'VIEWER':
-      case 'DATA_ENTRY':
-        return {
-          title: 'Operations & Data Dashboard',
-          description: 'Jurisdiction records, citizen registry data, and reporting overview.',
-          queueTitle: 'Officer Assignment Queue',
-          queueDescription: 'Initial verifications and scheduled re-visits.'
-        }
-      default:
-        return {
-          title: user?.roleLabel ? `${user.roleLabel} Dashboard` : 'Command & Operations Dashboard',
-          description: 'Real-time jurisdiction monitoring, officer workload allocation, and citizen verification queues.',
-          queueTitle: 'Officer Assignment Queue',
-          queueDescription: 'Assign field officers for initial verifications and scheduled re-visits.'
-        }
-    }
-  }
-
-  const headerInfo = getDashboardHeader()
-  const pendingVisitRequests = visitRequestsData?.data || []
+  const activeSOSCount = stats?.sos?.active ?? activeSOSList.length
+  const unassignedBeats = stats?.beats?.unassigned ?? 0
+  const overdueVisits = stats?.citizens?.overdueHighRiskVisits ?? 0
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto">
-      {/* Header bar with jurisdiction context */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShieldCheck className="h-7 w-7 text-primary" />
-            {headerInfo.title}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {headerInfo.description}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleRefreshAll} className="self-start sm:self-auto gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refresh Data
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Action toolbar */}
+      <div className="flex justify-end items-center">
+        <Button variant="outline" size="sm" onClick={handleRefreshAll} className="gap-2 font-semibold text-xs shadow-2xs">
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh Station Data
         </Button>
       </div>
 
-      {/* Core KPIs Grid - 2 rows of 3 cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {/* KPI 1: Total Officers */}
-        <StatsCard
-          title="Total Officers"
-          value={totalOfficers.toString()}
-          description="Station officer strength"
-          icon={Shield}
-        />
+      {/* 1. Critical Operational Alert Ribbon */}
+      <SHOAlertRibbon
+        activeSOS={activeSOSCount}
+        unassignedBeats={unassignedBeats}
+        overdueVisits={overdueVisits}
+        onSelectTab={handleSelectTab}
+      />
 
-        {/* KPI 2: Assigned Officers */}
-        <StatsCard
-          title="Assigned Officers"
-          value={assignedOfficers.toString()}
-          description="Assigned to station beats"
-          icon={UserCheck}
-        />
+      {/* 2. Hero 8-Card KPI Grid */}
+      <SHOKpiGrid
+        stats={stats}
+        onSelectTab={handleSelectTab}
+        activeTab={activeTab}
+      />
 
-        {/* KPI 3: Unassigned Officers */}
-        <StatsCard
-          title="Unassigned Officers"
-          value={unassignedOfficers.toString()}
-          description="Pending beat assignment"
-          icon={UserX}
-        />
-
-        {/* KPI 4: Total Visits */}
-        <StatsCard
-          title="Total Visits"
-          value={totalVisits.toLocaleString()}
-          description="All recorded visits"
-          icon={Calendar}
-        />
-
-        {/* KPI 5: Pending Visits */}
-        <StatsCard
-          title="Pending Visits"
-          value={pendingVisits.toString()}
-          description="Awaiting completion"
-          icon={Clock}
-        />
-
-        {/* KPI 6: Registered Citizens */}
-        <StatsCard
-          title="Registered Citizens"
-          value={totalCitizens.toLocaleString()}
-          description="Registered citizens"
-          icon={Users}
-        />
-      </div>
-
-      {/* SHO Operational Queues: Verification & Re-visits */}
-      <Card className="glass-card shadow-sm border border-slate-200">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+      {/* 3. Central Operational Action Workbench (Multi-Tab Container) */}
+      <Card id="operations-workbench" className="border border-slate-200 shadow-sm bg-white overflow-hidden scroll-mt-6">
+        <CardHeader className="py-2.5 px-4 sm:px-6 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                {headerInfo.queueTitle}
+              <CardTitle className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="h-4 sm:h-5 w-4 sm:w-5 text-primary" />
+                Daily Police Station Work & Tasks
               </CardTitle>
-              <CardDescription>
-                {headerInfo.queueDescription}
+              <CardDescription className="text-xs mt-0.5">
+                Manage senior citizen verifications, regular follow-up visits, emergency SOS calls, and beat officer duty.
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {pendingVerifications.length > 0 && (
-                <Badge variant="destructive" className="px-2.5 py-0.5">
+                <Badge variant="outline" className="px-2 py-0.5 text-xs bg-blue-50 text-blue-900 border-blue-200 font-bold">
                   {pendingVerifications.length} Verifications Pending
                 </Badge>
               )}
               {pendingVisitRequests.length > 0 && (
-                <Badge variant="secondary" className="px-2.5 py-0.5 bg-amber-100 text-amber-900">
-                  {pendingVisitRequests.length} Re-visits Due
+                <Badge variant="outline" className="px-2 py-0.5 text-xs bg-amber-50 text-amber-900 border-amber-200 font-bold">
+                  {pendingVisitRequests.length} Follow-up Visits Due
+                </Badge>
+              )}
+              {activeSOSCount > 0 && (
+                <Badge variant="destructive" className="px-2 py-0.5 text-xs font-bold animate-pulse">
+                  {activeSOSCount} Active SOS Alert{activeSOSCount > 1 ? 's' : ''}
                 </Badge>
               )}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="verifications" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="verifications" className="flex items-center gap-2">
+
+        <CardContent className="pt-2.5 pb-4 px-4 sm:px-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-3">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1.5 bg-slate-100/90 gap-1.5 rounded-xl border border-slate-200 shadow-2xs">
+              <TabsTrigger
+                value="verifications"
+                className="text-xs py-2.5 px-3 font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-700 hover:text-indigo-900 hover:bg-slate-200/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:via-indigo-600 data-[state=active]:to-indigo-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:[&_svg]:text-white"
+              >
                 <ShieldCheck className="h-4 w-4" />
-                New Citizen Verifications ({pendingVerifications.length})
+                <span>Verifications ({pendingVerifications.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="revisits" className="flex items-center gap-2">
+              <TabsTrigger
+                value="revisits"
+                className="text-xs py-2.5 px-3 font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-700 hover:text-indigo-900 hover:bg-slate-200/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:via-indigo-600 data-[state=active]:to-indigo-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:[&_svg]:text-white"
+              >
                 <Clock className="h-4 w-4" />
-                Re-visits & Citizen Requests ({pendingVisitRequests.length})
+                <span>Follow-up Visits ({pendingVisitRequests.length})</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="sos"
+                className="text-xs py-2.5 px-3 font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-700 hover:text-indigo-900 hover:bg-slate-200/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:via-indigo-600 data-[state=active]:to-indigo-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:[&_svg]:text-white"
+              >
+                <Siren className={`h-4 w-4 ${activeSOSCount > 0 ? 'text-red-500 animate-pulse data-[state=active]:text-white' : ''}`} />
+                <span>Emergency SOS ({activeSOSCount})</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="roster"
+                className="text-xs py-2.5 px-3 font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-700 hover:text-indigo-900 hover:bg-slate-200/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:via-indigo-600 data-[state=active]:to-indigo-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:[&_svg]:text-white"
+              >
+                <MapPin className="h-4 w-4" />
+                <span>Beat Duty List</span>
               </TabsTrigger>
             </TabsList>
 
-            {/* TAB 1: New Citizen Verifications */}
-            <TabsContent value="verifications">
-              {loadingVerifications ? (
-                <div className="py-8 text-center text-muted-foreground flex items-center justify-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" /> Loading pending registrations...
-                </div>
-              ) : pendingVerifications.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                  <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <p className="font-semibold text-slate-700">All registered citizens have been assigned for verification!</p>
-                  <p className="text-xs text-muted-foreground mt-1">No unassigned verification requests in queue.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded-md border border-slate-200">
-                  <Table>
-                    <TableHeader className="bg-slate-50/80">
-                      <TableRow>
-                        <TableHead>Citizen Details</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Registration Date</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingVerifications.map((req: any) => (
-                        <TableRow key={req.id} className="hover:bg-slate-50/60 transition-colors">
-                          <TableCell>
-                            <div className="font-semibold text-slate-900">{req.seniorCitizen?.fullName || 'Senior Citizen'}</div>
-                            <div className="text-xs text-muted-foreground">{req.seniorCitizen?.mobileNumber}</div>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate text-sm text-slate-700">
-                            {req.seniorCitizen?.permanentAddress || 'Address on record'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={req.priority === 'High' || req.priority === 'Urgent' ? 'destructive' : 'outline'}>
-                              {req.priority || 'Normal'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'N/A'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              className="gap-1.5 shadow-sm"
-                              onClick={() => openVerificationAssignModal(req)}
-                            >
-                              <UserCheck className="h-4 w-4" />
-                              Assign Officer
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+            {/* TAB 1: Verifications Queue */}
+            <TabsContent value="verifications" className="mt-4 focus-visible:outline-hidden">
+              <SHOVerificationTab
+                verifications={pendingVerifications}
+                loading={loadingVerifications}
+                onOpenAssignModal={handleOpenAssignModal}
+                onRefresh={handleRefreshAll}
+              />
             </TabsContent>
 
-            {/* TAB 2: Re-visits & Citizen Requests */}
-            <TabsContent value="revisits">
-              {loadingVisitRequests ? (
-                <div className="py-8 text-center text-muted-foreground flex items-center justify-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" /> Loading pending re-visit requests...
-                </div>
-              ) : pendingVisitRequests.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                  <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <p className="font-semibold text-slate-700">No pending re-visits awaiting officer assignment</p>
-                  <p className="text-xs text-muted-foreground mt-1">All follow-ups and citizen requests are scheduled.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded-md border border-slate-200">
-                  <Table>
-                    <TableHeader className="bg-slate-50/80">
-                      <TableRow>
-                        <TableHead>Citizen</TableHead>
-                        <TableHead>Visit Purpose</TableHead>
-                        <TableHead>Due / Preferred Date</TableHead>
-                        <TableHead>Notes</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingVisitRequests.map((req: any) => {
-                        const sc = req.SeniorCitizen || req.seniorCitizen;
-                        return (
-                          <TableRow key={req.id} className="hover:bg-slate-50/60 transition-colors">
-                            <TableCell>
-                              <div className="font-semibold text-slate-900">{sc?.fullName || 'Senior Citizen'}</div>
-                              <div className="text-xs text-muted-foreground">{sc?.mobileNumber}</div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="capitalize">
-                                {req.visitType || 'Follow-up'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm font-medium text-slate-800">
-                              {req.preferredDate ? new Date(req.preferredDate).toLocaleDateString() : 'TBD'}
-                              {req.preferredTimeSlot && <span className="text-xs text-muted-foreground block">{req.preferredTimeSlot}</span>}
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate text-xs text-slate-600">
-                              {req.notes || 'Re-visit triggered by vulnerability assessment'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="gap-1.5 shadow-sm border border-slate-300"
-                                onClick={() => openRevisitAssignModal(req)}
-                              >
-                                <UserCheck className="h-4 w-4" />
-                                Assign Officer
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+            {/* TAB 2: Re-visits Due Queue */}
+            <TabsContent value="revisits" className="mt-4 focus-visible:outline-hidden">
+              <SHORevisitTab
+                visitRequests={pendingVisitRequests}
+                loading={loadingVisitRequests}
+                policeStationId={user?.policeStationId}
+                onOpenAssignModal={handleOpenAssignModal}
+                onRefresh={handleRefreshAll}
+              />
+            </TabsContent>
+
+            {/* TAB 3: SOS Live Console */}
+            <TabsContent value="sos" className="mt-4 focus-visible:outline-hidden">
+              <SHOSosTab
+                alerts={activeSOSList}
+                loading={loadingSOS}
+                onRefresh={handleRefreshAll}
+              />
+            </TabsContent>
+
+            {/* TAB 4: Beat Force Roster */}
+            <TabsContent value="roster" className="mt-4 focus-visible:outline-hidden">
+              <SHORosterTab
+                policeStationId={user?.policeStationId}
+                onRefresh={handleRefreshAll}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
 
-      {/* Main Content Grid: Recent Activities & Quick Navigation */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Audit & Operation Activities */}
-        <Card className="glass-card shadow-sm border border-slate-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-primary text-base font-bold">
-              <Clock className="h-5 w-5" />
-              Recent Station Activities & Audits
-            </CardTitle>
-            <CardDescription>Latest assignment and operational events</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentActivities.length > 0 ? (
-              <div className="space-y-3">
-                {recentActivities.slice(0, 5).map((activity: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 p-2 rounded-md transition-colors">
-                    <div className="flex items-center gap-3">
-                      {activity.status === "success" || activity.type === "success" ? (
-                        <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-600 shrink-0" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">{activity.action || activity.description}</p>
-                        <p className="text-xs text-muted-foreground">by {activity.user?.name || activity.user || activity.userName || "System"}</p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{activity.time || activity.timestamp ? new Date(activity.time || activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No recent activities recorded</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Station Navigation & Quick Actions */}
-        <Card className="glass-card shadow-sm border border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-primary text-base font-bold">Station Operations & Modules</CardTitle>
-            <CardDescription>Direct navigation to jurisdiction management modules</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                className="h-20 flex-col gap-2 justify-center bg-white/60 hover:bg-primary hover:text-white border border-slate-200 transition-all group"
-                onClick={() => window.location.href = '/citizens'}
-              >
-                <Users className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
-                <span className="text-xs font-semibold">Senior Citizens</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-20 flex-col gap-2 justify-center bg-white/60 hover:bg-primary hover:text-white border border-slate-200 transition-all group"
-                onClick={() => window.location.href = '/officers'}
-              >
-                <UserCheck className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
-                <span className="text-xs font-semibold">Station Officers</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-20 flex-col gap-2 justify-center bg-white/60 hover:bg-primary hover:text-white border border-slate-200 transition-all group"
-                onClick={() => window.location.href = '/visits'}
-              >
-                <Calendar className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
-                <span className="text-xs font-semibold">All Visits & Schedule</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-20 flex-col gap-2 justify-center bg-white/60 hover:bg-primary hover:text-white border border-slate-200 transition-all group"
-                onClick={() => window.location.href = '/citizens/map'}
-              >
-                <MapPin className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
-                <span className="text-xs font-semibold">Jurisdiction Map</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 4. Beat Officer Performance & Export Hub */}
+      <SHOOfficerLeaderboard
+        policeStationId={user?.policeStationId}
+      />
 
       {/* Reusable SHO Officer Assignment Dialog Modal */}
       <SHOAssignmentModal

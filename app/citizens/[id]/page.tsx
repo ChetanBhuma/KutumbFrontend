@@ -20,9 +20,11 @@ import {
     FileText, AlertTriangle, Clock, Activity, Eye,
     Stethoscope, Users, Home, AlertCircle,
     Smartphone, Wifi, FileCheck, ClipboardCheck,
-    UserPlus, UserCheck, Baby, CheckCircle2, XCircle
+    UserPlus, UserCheck, Baby, CheckCircle2, XCircle,
+    Copy, Check
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 import { useSecureImage } from '@/hooks/use-secure-image';
 
@@ -110,6 +112,17 @@ export default function CitizenDetailPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [showCard, setShowCard] = useState(false);
+    const [copiedId, setCopiedId] = useState(false);
+
+    const handleCopyId = () => {
+        const idToCopy = citizen?.registrationNo || citizen?.srCitizenUniqueId || citizen?.id;
+        if (idToCopy) {
+            navigator.clipboard.writeText(idToCopy);
+            setCopiedId(true);
+            toast({ title: "ID Copied", description: `${idToCopy} copied to clipboard.` });
+            setTimeout(() => setCopiedId(false), 2000);
+        }
+    };
 
 
 
@@ -235,108 +248,191 @@ export default function CitizenDetailPage() {
 
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Left Sidebar: Profile Card */}
+                        {/* Left Sidebar: Immersive Profile Card */}
                         <div className="lg:col-span-4 space-y-6">
-                            <Card className="overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm bg-card rounded-xl">
-                                <CardContent className="pt-6 pb-6 px-6">
-                                    <div className="flex flex-col items-center text-center">
-                                        <div className="relative mb-4">
-                                            <Avatar className="h-24 w-24 border-2 border-primary/20 shadow-md">
+                            <div className="overflow-hidden rounded-2xl border border-blue-200/80 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900 transition-all">
+                                {/* Signature Police Theme Gradient Hero Banner */}
+                                <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white p-6 relative overflow-hidden">
+                                    <div className="relative z-10 flex flex-col items-center text-center">
+                                        {/* Avatar with Status Ring */}
+                                        <div className="relative mb-3">
+                                            <Avatar className="h-24 w-24 border-3 border-white/40 shadow-xl ring-4 ring-indigo-500/20">
                                                 <AvatarImage src={validPhotoUrl || undefined} className="object-cover" />
-                                                <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
+                                                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black">
                                                     {getInitials(citizen.fullName)}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <Badge variant={citizen.status === 'Active' ? 'default' : 'secondary'} className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs shadow-sm uppercase tracking-wider">
-                                                {citizen.status}
+                                            <Badge
+                                                variant={citizen.status === 'Active' ? 'default' : 'secondary'}
+                                                className={cn(
+                                                    "absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 text-[10px] font-bold shadow-md uppercase tracking-wider",
+                                                    citizen.status === 'Active'
+                                                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white border border-white/30'
+                                                        : 'bg-slate-600 text-white'
+                                                )}
+                                            >
+                                                {citizen.status || 'Active'}
                                             </Badge>
                                         </div>
 
-                                        <h2 className="text-xl font-bold text-foreground tracking-tight">{citizen.fullName}</h2>
-                                        <p className="text-sm text-muted-foreground font-mono mt-1">
-                                            {citizen.registrationNo || citizen.srCitizenUniqueId || `ID: ${citizen.id ? citizen.id.slice(-6).toUpperCase() : 'N/A'}`}
-                                        </p>
+                                        {/* Full Name */}
+                                        <h2 className="text-xl font-extrabold text-white tracking-tight mt-1">{citizen.fullName}</h2>
 
-                                        <div className="flex flex-wrap justify-center gap-2 mt-4 mb-6">
-                                            <Badge
-                                                variant="outline"
-                                                className={`px-2 py-0.5 text-xs font-medium border ${citizen.idVerificationStatus === 'Verified'
-                                                    ? 'text-green-600 border-green-200 bg-green-50/50'
+                                        {/* Copyable ID Badge */}
+                                        <button
+                                            onClick={handleCopyId}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 mt-1.5 rounded-full bg-white/10 hover:bg-white/20 text-blue-100 text-xs font-mono font-medium backdrop-blur-xs transition-all border border-white/10 group cursor-pointer"
+                                            title="Click to copy ID"
+                                        >
+                                            <span>{citizen.registrationNo || citizen.srCitizenUniqueId || `ID: ${citizen.id ? citizen.id.slice(-6).toUpperCase() : 'N/A'}`}</span>
+                                            {copiedId ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />}
+                                        </button>
+
+                                        {/* Verification & Risk Badges */}
+                                        <div className="flex flex-wrap justify-center gap-2 mt-3.5 w-full">
+                                            <span className={cn(
+                                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-xs border shadow-xs",
+                                                citizen.idVerificationStatus === 'Verified'
+                                                    ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30'
                                                     : citizen.idVerificationStatus === 'FieldVerified'
-                                                        ? 'text-blue-600 border-blue-200 bg-blue-50/50'
-                                                        : 'text-amber-600 border-amber-200 bg-amber-50/50'
-                                                    }`}
-                                            >
+                                                        ? 'bg-blue-500/20 text-blue-200 border-blue-400/30'
+                                                        : citizen.idVerificationStatus === 'Rejected'
+                                                            ? 'bg-rose-500/20 text-rose-200 border-rose-400/30'
+                                                            : 'bg-amber-500/20 text-amber-200 border-amber-400/30'
+                                            )}>
+                                                <CheckCircle2 className="h-3.5 w-3.5" />
                                                 {citizen.idVerificationStatus === 'FieldVerified'
                                                     ? 'Field Verified'
                                                     : citizen.idVerificationStatus === 'Verified'
                                                         ? 'ID Verified'
-                                                        : 'Verification Pending'}
-                                            </Badge>
-                                            <Badge variant="outline" className={`px-2 py-0.5 text-xs font-medium border ${citizen.vulnerabilityLevel === 'High' ? 'text-red-600 border-red-200 bg-red-50/50' :
-                                                citizen.vulnerabilityLevel === 'Medium' ? 'text-amber-600 border-amber-200 bg-amber-50/50' :
-                                                    'text-green-600 border-green-200 bg-green-50/50'
-                                                }`}>
-                                                {citizen.vulnerabilityLevel || 'Risk: N/A'}
-                                            </Badge>
+                                                        : citizen.idVerificationStatus === 'Rejected'
+                                                            ? 'Rejected'
+                                                            : 'Verification Pending'}
+                                            </span>
+
+                                            <span className={cn(
+                                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-xs border shadow-xs",
+                                                citizen.vulnerabilityLevel === 'High'
+                                                    ? 'bg-rose-500/20 text-rose-200 border-rose-400/30'
+                                                    : citizen.vulnerabilityLevel === 'Medium'
+                                                        ? 'bg-amber-500/20 text-amber-200 border-amber-400/30'
+                                                        : 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30'
+                                            )}>
+                                                <AlertTriangle className="h-3.5 w-3.5" />
+                                                {citizen.vulnerabilityLevel ? `${citizen.vulnerabilityLevel} Risk` : 'Standard Risk'}
+                                            </span>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-0 w-full divide-x border-y py-3 bg-muted/20">
+                                        {/* 2-Stat Demographics Micro-Grid */}
+                                        <div className="grid grid-cols-2 gap-2 w-full mt-4 p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/10 text-center">
                                             <div className="px-2">
-                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Age</p>
-                                                <p className="font-semibold text-sm">{citizen.age || '--'} <span className="text-[10px] text-muted-foreground">Years</span></p>
+                                                <p className="text-[10px] text-blue-200/75 uppercase tracking-wider font-semibold">Age</p>
+                                                <p className="font-bold text-sm text-white">{citizen.age ? `${citizen.age} Yrs` : '--'}</p>
                                             </div>
-                                            <div className="px-2">
-                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Gender</p>
-                                                <p className="font-semibold text-sm">{citizen.gender || '--'}</p>
-                                            </div>
-                                            <div className="px-2">
-                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Occupation</p>
-                                                <p className="font-semibold text-sm truncate">{citizen.occupation || 'Retired'}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full mt-6 space-y-3 text-left">
-                                            <div className="flex items-center gap-3 text-sm group">
-                                                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
-                                                    <Phone className="h-3.5 w-3.5" />
-                                                </div>
-                                                <span className="font-medium truncate">{citizen.mobileNumber}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-sm group">
-                                                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
-                                                    <MapPin className="h-3.5 w-3.5" />
-                                                </div>
-                                                <span className="truncate text-muted-foreground">{citizen.permanentAddress}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-sm group">
-                                                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
-                                                    <Shield className="h-3.5 w-3.5" />
-                                                </div>
-                                                <span className="truncate text-muted-foreground">{citizen.policeStationName || 'Station Not Assigned'}</span>
+                                            <div className="px-2 border-l border-white/10">
+                                                <p className="text-[10px] text-blue-200/75 uppercase tracking-wider font-semibold">Gender</p>
+                                                <p className="font-bold text-sm text-white capitalize">{citizen.gender || '--'}</p>
                                             </div>
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
 
+                                {/* Card Body Details & Actions */}
+                                <div className="p-5 space-y-4">
+                                    {/* Direct Phone Dial Pod */}
+                                    {citizen.mobileNumber && (
+                                        <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="p-2 rounded-lg bg-blue-600 text-white shrink-0 shadow-xs">
+                                                    <Phone className="h-4 w-4" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Primary Mobile</p>
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100 font-mono truncate">{citizen.mobileNumber}</p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                asChild
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold h-8 px-3 rounded-lg text-xs shrink-0 shadow-xs"
+                                            >
+                                                <a href={`tel:${citizen.mobileNumber}`}>
+                                                    Call
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {/* Location & Jurisdiction Stack */}
+                                    <div className="space-y-2.5 pt-0.5">
+                                        {/* Address */}
+                                        <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                            <div className="p-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 shrink-0">
+                                                <MapPin className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Permanent Address</p>
+                                                <p className="text-xs font-semibold text-foreground leading-relaxed">
+                                                    {citizen.permanentAddress || citizen.presentAddress || 'Address not registered'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Police Station & District */}
+                                        <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                            <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 shrink-0">
+                                                <Shield className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Police Station & District</p>
+                                                <p className="text-xs font-bold text-foreground truncate">
+                                                    {citizen.policeStationName || citizen.PoliceStation?.name || 'Station Not Assigned'}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                    District: <span className="font-semibold text-foreground">{citizen.districtName || citizen.District?.name || 'Not Assigned'}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Primary Emergency Contact Card */}
                             {primaryContact && (
-                                <Card className="shadow-sm border border-red-100 bg-red-50/30">
-                                    <CardHeader className="py-3 px-4 border-b border-red-100">
-                                        <CardTitle className="text-sm font-bold text-red-900 flex items-center gap-2">
-                                            <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" /> Emergency Contact
-                                        </CardTitle>
+                                <Card className="overflow-hidden shadow-sm border border-rose-200/80 dark:border-rose-900/40 bg-gradient-to-br from-rose-50/70 via-white to-red-50/40 dark:from-rose-950/20 dark:via-slate-900 dark:to-red-950/10 rounded-2xl">
+                                    <CardHeader className="py-3 px-4 border-b border-rose-100 dark:border-rose-900/40 bg-rose-100/40 dark:bg-rose-950/40">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-xs font-extrabold text-rose-900 dark:text-rose-200 flex items-center gap-2 uppercase tracking-wider">
+                                                <Heart className="h-3.5 w-3.5 text-rose-600 fill-rose-600" /> Emergency Contact
+                                            </CardTitle>
+                                            <Badge variant="outline" className="text-[10px] font-bold bg-rose-200/60 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border-rose-300">
+                                                PRIMARY
+                                            </Badge>
+                                        </div>
                                     </CardHeader>
                                     <CardContent className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm shrink-0 uppercase">
-                                                {getInitials(primaryContact.name)}
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="h-10 w-10 rounded-xl bg-rose-100 dark:bg-rose-900/60 flex items-center justify-center text-rose-700 dark:text-rose-300 font-extrabold text-sm shrink-0 uppercase border border-rose-200">
+                                                    {getInitials(primaryContact.name)}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{primaryContact.name}</p>
+                                                    <p className="text-xs font-medium text-rose-700 dark:text-rose-400 capitalize">{primaryContact.relation || 'Contact'}</p>
+                                                    <p className="text-xs font-mono font-semibold text-slate-600 dark:text-slate-400 mt-0.5">{primaryContact.mobileNumber}</p>
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-sm truncate">{primaryContact.name}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{primaryContact.relation}</p>
-                                                <p className="text-xs font-mono font-medium mt-0.5">{primaryContact.mobileNumber}</p>
-                                            </div>
+                                            {primaryContact.mobileNumber && (
+                                                <Button
+                                                    size="sm"
+                                                    asChild
+                                                    className="bg-rose-600 hover:bg-rose-700 text-white font-semibold h-8 px-3 rounded-lg text-xs shrink-0 shadow-xs"
+                                                >
+                                                    <a href={`tel:${primaryContact.mobileNumber}`}>
+                                                        <Phone className="h-3 w-3 mr-1.5" /> Call
+                                                    </a>
+                                                </Button>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -346,71 +442,126 @@ export default function CitizenDetailPage() {
                         {/* Right Content: Tabs */}
                         <div className="lg:col-span-8">
                             <Tabs defaultValue="overview" className="space-y-6">
-                                <div className="border-b">
-                                    <TabsList className="bg-muted/30 h-auto p-1 w-full justify-start gap-2 overflow-x-auto no-scrollbar rounded-xl">
+                                <div className="pb-1">
+                                    <TabsList className="bg-slate-100/95 border border-slate-200 h-auto p-1.5 w-full justify-start gap-1.5 overflow-x-auto no-scrollbar rounded-xl shadow-2xs">
                                         {[
-                                            { value: "overview", label: "Overview" },
-                                            { value: "personal", label: "Personal" },
-                                            { value: "family", label: "Family" },
-                                            { value: "health", label: "Health" },
-                                            { value: "official", label: "Official" },
-                                            { value: "assessment", label: "Assessment" },
-                                            { value: "history", label: "History" },
-                                        ].map(tab => (
-                                            <TabsTrigger
-                                                key={tab.value}
-                                                value={tab.value}
-                                                className="px-4 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground font-medium transition-all hover:text-foreground border-0"
-                                            >
-                                                {tab.label}
-                                            </TabsTrigger>
-                                        ))}
+                                            { value: "overview", label: "Overview", icon: Activity },
+                                            { value: "personal", label: "Personal", icon: User },
+                                            { value: "family", label: "Family", icon: Users },
+                                            { value: "health", label: "Health", icon: Heart },
+                                            { value: "official", label: "Official", icon: Shield },
+                                            { value: "assessment", label: "Assessment", icon: ClipboardCheck },
+                                            { value: "history", label: "History", icon: Clock },
+                                        ].map(tab => {
+                                            const Icon = tab.icon;
+                                            return (
+                                                <TabsTrigger
+                                                    key={tab.value}
+                                                    value={tab.value}
+                                                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-bold text-slate-700 hover:text-indigo-900 hover:bg-slate-200/60 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:via-indigo-600 data-[state=active]:to-indigo-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:[&_svg]:text-white transition-all border-0 shrink-0"
+                                                >
+                                                    <Icon className="h-4 w-4 text-indigo-600 shrink-0 transition-colors" />
+                                                    <span>{tab.label}</span>
+                                                </TabsTrigger>
+                                            );
+                                        })}
                                     </TabsList>
                                 </div>
 
                                 <TabsContent value="overview" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <Card className="hover:shadow-md transition-all shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
-                                            <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">LIFETIME</span>
-                                                <div className="text-2xl font-bold tracking-tight">{visits.length || (citizen.Visit ? citizen.Visit.length : 0)}</div>
-                                                <p className="text-[10px] text-muted-foreground font-medium uppercase">Total Visits</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {/* Total Visit KPI Card */}
+                                        <Card className="group relative shadow-2xs hover:shadow-md transition-all duration-200 border border-slate-200/80 dark:border-slate-800 border-l-[3.5px] border-l-blue-600 bg-gradient-to-br from-blue-50/60 via-white to-slate-50/40 dark:from-blue-950/20 dark:via-slate-900 dark:to-slate-950/40 rounded-xl overflow-hidden hover:-translate-y-0.5">
+                                            <CardContent className="py-2.5 px-3.5">
+                                                <div className="flex items-center justify-between gap-2.5">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 shrink-0 transition-transform group-hover:scale-105 shadow-2xs">
+                                                            <Calendar className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate leading-tight">
+                                                                Total Visit
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+                                                                Duty visits conducted
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/60 rounded-lg text-lg font-black shrink-0 tracking-tight shadow-2xs">
+                                                        {visits.length || (citizen.Visit ? citizen.Visit.length : 0)}
+                                                    </div>
+                                                </div>
                                             </CardContent>
                                         </Card>
-                                        <Card className="hover:shadow-md transition-all shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
-                                            <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                                                <span className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">URGENT</span>
-                                                <div className="text-2xl font-bold tracking-tight">{citizen.sosAlerts?.length || 0}</div>
-                                                <p className="text-[10px] text-muted-foreground font-medium uppercase">SOS Alerts</p>
+
+                                        {/* SOS Alert KPI Card */}
+                                        <Card className="group relative shadow-2xs hover:shadow-md transition-all duration-200 border border-slate-200/80 dark:border-slate-800 border-l-[3.5px] border-l-rose-500 bg-gradient-to-br from-rose-50/60 via-white to-slate-50/40 dark:from-rose-950/20 dark:via-slate-900 dark:to-slate-950/40 rounded-xl overflow-hidden hover:-translate-y-0.5">
+                                            <CardContent className="py-2.5 px-3.5">
+                                                <div className="flex items-center justify-between gap-2.5">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="p-1.5 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 shrink-0 transition-transform group-hover:scale-105 shadow-2xs">
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate leading-tight">
+                                                                SOS Alert
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+                                                                Emergency incidents
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-2.5 py-0.5 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/60 rounded-lg text-lg font-black shrink-0 tracking-tight shadow-2xs">
+                                                        {citizen.sosAlerts?.length || 0}
+                                                    </div>
+                                                </div>
                                             </CardContent>
                                         </Card>
-                                        <Card className="hover:shadow-md transition-all shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
-                                            <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-1">
-                                                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">ACTIVE</span>
-                                                <div className="text-2xl font-bold tracking-tight">{citizen.serviceRequests?.length || 0}</div>
-                                                <p className="text-[10px] text-muted-foreground font-medium uppercase">Service Requests</p>
+
+                                        {/* Visit Request KPI Card */}
+                                        <Card className="group relative shadow-2xs hover:shadow-md transition-all duration-200 border border-slate-200/80 dark:border-slate-800 border-l-[3.5px] border-l-amber-500 bg-gradient-to-br from-amber-50/60 via-white to-slate-50/40 dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-950/40 rounded-xl overflow-hidden hover:-translate-y-0.5">
+                                            <CardContent className="py-2.5 px-3.5">
+                                                <div className="flex items-center justify-between gap-2.5">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 shrink-0 transition-transform group-hover:scale-105 shadow-2xs">
+                                                            <ClipboardCheck className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate leading-tight">
+                                                                Visit Request
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+                                                                Citizen requests
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-2.5 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 rounded-lg text-lg font-black shrink-0 tracking-tight shadow-2xs">
+                                                        {citizen.serviceRequests?.length || (citizen.VisitRequest ? citizen.VisitRequest.length : 0)}
+                                                    </div>
+                                                </div>
                                             </CardContent>
                                         </Card>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Assessment & Official Status */}
-                                        <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl h-full">
+                                        <Card className="shadow-sm border border-slate-200/80 dark:border-slate-800 bg-card rounded-2xl h-full overflow-hidden">
                                             <CardHeader className="py-3 px-4 border-b bg-muted/10">
-                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                                                    <ClipboardCheck className="h-4 w-4 text-indigo-600" />
                                                     Assessment & Official Status
                                                 </CardTitle>
                                             </CardHeader>
-                                            <CardContent className="p-4 space-y-4">
+                                            <CardContent className="p-5 space-y-4">
                                                 {/* Verification Status */}
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Verification Status</p>
+                                                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Verification Status</p>
                                                     <div className="flex items-center justify-between">
-                                                        <Badge variant="outline" className={`text-xs px-2 py-0.5 border ${citizen.idVerificationStatus === 'Verified' ? 'text-green-600 border-green-200 bg-green-50' :
-                                                            citizen.idVerificationStatus === 'Rejected' ? 'text-red-600 border-red-200 bg-red-50' :
-                                                                citizen.idVerificationStatus === 'FieldVerified' ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-amber-600 border-amber-200 bg-amber-50'
+                                                        <Badge variant="outline" className={`text-sm font-bold px-3 py-1 rounded-lg border ${citizen.idVerificationStatus === 'Verified' ? 'text-green-700 border-green-300 bg-green-50/80 dark:bg-green-950/40 dark:text-green-300' :
+                                                            citizen.idVerificationStatus === 'Rejected' ? 'text-red-700 border-red-300 bg-red-50/80 dark:bg-red-950/40 dark:text-red-300' :
+                                                                citizen.idVerificationStatus === 'FieldVerified' ? 'text-blue-700 border-blue-300 bg-blue-50/80 dark:bg-blue-950/40 dark:text-blue-300' : 'text-amber-700 border-amber-300 bg-amber-50/80 dark:bg-amber-950/40 dark:text-amber-300'
                                                             }`}>
-                                                            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${citizen.idVerificationStatus === 'Verified' ? 'bg-green-500' :
+                                                            <div className={`w-2 h-2 rounded-full mr-2 ${citizen.idVerificationStatus === 'Verified' ? 'bg-green-500' :
                                                                 citizen.idVerificationStatus === 'Rejected' ? 'bg-red-500' :
                                                                     citizen.idVerificationStatus === 'FieldVerified' ? 'bg-blue-500' : 'bg-amber-500'
                                                                 }`} />
@@ -418,7 +569,7 @@ export default function CitizenDetailPage() {
                                                                 citizen.idVerificationStatus || 'Verification Pending'}
                                                         </Badge>
                                                     </div>
-                                                    <div className="text-[10px] text-muted-foreground mt-1 flex justify-between">
+                                                    <div className="text-xs text-muted-foreground mt-2 flex justify-between font-medium">
                                                         <span>Last: {citizen.lastAssessmentDate ? format(new Date(citizen.lastAssessmentDate), 'MMM d, yyyy') : 'Not yet verified'}</span>
                                                         <span>By: {verificationVisit?.officer?.name || 'Pending assignment'}</span>
                                                     </div>
@@ -428,17 +579,17 @@ export default function CitizenDetailPage() {
 
                                                 {/* Risk Assessment */}
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Risk Assessment</p>
+                                                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Risk Assessment</p>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={`text-sm font-bold ${citizen.vulnerabilityLevel === 'High' ? 'text-red-600' :
+                                                        <span className={`text-base font-black ${citizen.vulnerabilityLevel === 'High' ? 'text-red-600' :
                                                             citizen.vulnerabilityLevel === 'Medium' ? 'text-amber-600' :
                                                                 'text-green-600'
                                                             }`}>
-                                                            {citizen.vulnerabilityLevel || 'Not Assessed'}
+                                                            {citizen.vulnerabilityLevel ? `${citizen.vulnerabilityLevel} Risk Level` : 'Not Assessed'}
                                                         </span>
                                                     </div>
-                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                        Based on health, living conditions, and social support.
+                                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                                        Based on health condition, living conditions, and social support.
                                                     </p>
                                                 </div>
 
@@ -446,8 +597,8 @@ export default function CitizenDetailPage() {
 
                                                 {/* Official Notes */}
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Official Notes</p>
-                                                    <div className="bg-muted/30 p-2.5 rounded border text-xs text-muted-foreground min-h-[50px] italic">
+                                                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Official Notes</p>
+                                                    <div className="bg-muted/30 p-3 rounded-xl border text-sm text-slate-700 dark:text-slate-300 min-h-[55px] leading-relaxed italic">
                                                         {citizen.officialRemarks || verificationVisit?.notes || 'No official notes recorded.'}
                                                     </div>
                                                 </div>
@@ -811,11 +962,34 @@ export default function CitizenDetailPage() {
                                 </TabsContent>
 
                                 <TabsContent value="assessment" className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
-                                    <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
-                                        <CardHeader className="py-3 px-4 border-b bg-muted/10">
-                                            <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                                <ClipboardCheck className="h-4 w-4 text-primary" /> Latest Assessment Details
+                                    <Card className="shadow-sm border border-slate-200/80 dark:border-slate-800 bg-card rounded-2xl overflow-hidden">
+                                        <CardHeader className="py-3 px-4 border-b bg-muted/10 flex flex-row items-center justify-between gap-3">
+                                            <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                                                <ClipboardCheck className="h-4 w-4 text-indigo-600" /> Latest Assessment Details
                                             </CardTitle>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider hidden sm:inline-block">Risk Level:</span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "text-xs font-bold px-2.5 py-1 rounded-lg border shadow-2xs flex items-center gap-1.5",
+                                                        citizen.vulnerabilityLevel === 'High'
+                                                            ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
+                                                            : citizen.vulnerabilityLevel === 'Medium'
+                                                                ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                                    )}
+                                                >
+                                                    {citizen.vulnerabilityLevel === 'High' ? (
+                                                        <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
+                                                    ) : citizen.vulnerabilityLevel === 'Medium' ? (
+                                                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                                                    ) : (
+                                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                                    )}
+                                                    <span>{citizen.vulnerabilityLevel ? `${citizen.vulnerabilityLevel} Risk` : 'Standard Risk'}</span>
+                                                </Badge>
+                                            </div>
                                         </CardHeader>
                                         <CardContent className="pt-4 pb-4">
                                             {(() => {

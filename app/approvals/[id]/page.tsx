@@ -138,9 +138,11 @@ export default function ApprovalDetailPage() {
                     <div className="flex gap-2">
                         <VisitScheduler
                             registrationId={registration.id}
-                            citizenId={registration.citizenId}
-                            policeStationId={registration.citizen?.policeStation?.id}
-                            beatId={registration.citizen?.beat?.id}
+                            citizenId={registration.citizenId || registration.citizen?.id}
+                            policeStationId={registration.citizen?.policeStationId || registration.citizen?.PoliceStation?.id || registration.citizen?.policeStation?.id}
+                            beatId={registration.citizen?.beatId || registration.citizen?.Beat?.id || registration.citizen?.beat?.id}
+                            policeStationName={registration.citizen?.PoliceStation?.name || registration.citizen?.policeStation?.name || registration.citizen?.policeStationName}
+                            citizenName={registration.citizen?.fullName || registration.fullName}
                             onScheduled={fetchData}
                         />
                     </div>

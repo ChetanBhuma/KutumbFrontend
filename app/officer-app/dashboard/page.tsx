@@ -150,9 +150,26 @@ export default function OfficerDashboard() {
                                                     <span>{visit.SeniorCitizen?.permanentAddress}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4 shrink-0" />
-                                                    <span>{format(new Date(visit.scheduledDate), 'dd MMM yyyy')}</span>
+                                                    <Calendar className="h-4 w-4 shrink-0 text-primary" />
+                                                    <span className="font-medium text-slate-800">
+                                                        {format(new Date(visit.scheduledDate), 'dd MMM yyyy')}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">•</span>
+                                                    <span className="text-xs text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+                                                        <Clock className="h-3 w-3" />
+                                                        {visit.notes && visit.notes.includes('[Time Slot:')
+                                                            ? (visit.notes.match(/\[Time Slot:\s*([^\]]+)\]/)?.[1] || format(new Date(visit.scheduledDate), 'hh:mm a'))
+                                                            : format(new Date(visit.scheduledDate), 'hh:mm a')
+                                                        }
+                                                    </span>
                                                 </div>
+                                                {visit.visitType && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="text-[11px] bg-slate-50 text-slate-700">
+                                                            Type: {visit.visitType}
+                                                        </Badge>
+                                                    </div>
+                                                )}
                                                 {visit.visitType === 'Emergency' && (
                                                     <div className="flex items-center gap-2 text-red-600 font-medium">
                                                         <AlertTriangle className="h-4 w-4" />

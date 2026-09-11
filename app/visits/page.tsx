@@ -36,10 +36,11 @@ import {
   SheetTitle,
   SheetFooter,
 } from '@/components/ui/sheet';
-import { MapPin, Phone, Navigation, User, Clock, FileText, Eye, Pencil } from 'lucide-react';
+import { MapPin, Phone, Navigation, User, Clock, FileText, Eye, Pencil, Filter } from 'lucide-react';
 import MapComponent from '@/components/MapComponent';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ExportButton } from '@/components/ui/export-button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface VisitRecord {
   id: string;
@@ -109,7 +110,6 @@ export default function VisitsPage() {
   const [actionNotes, setActionNotes] = useState('');
   const [actionDuration, setActionDuration] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [autoScheduleLoading, setAutoScheduleLoading] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
@@ -249,31 +249,7 @@ export default function VisitsPage() {
     }
   };
 
-  const handleAutoSchedule = async () => {
-    try {
-      setAutoScheduleLoading(true);
-      const start = new Date();
-      const end = new Date();
-      end.setDate(end.getDate() + 7);
-      await apiClient.autoScheduleVisits({
-        startDate: format(start, 'yyyy-MM-dd'),
-        endDate: format(end, 'yyyy-MM-dd'),
-      });
-      await refetch();
-      toast({
-        title: "Auto-Schedule Completed",
-        description: "Visits have been auto-scheduled for the next 7 days."
-      });
-    } catch (err: any) {
-      toast({
-        title: "Auto-Schedule Failed",
-        description: err.response?.data?.message || 'Auto-schedule could not be completed.',
-        variant: "destructive"
-      });
-    } finally {
-      setAutoScheduleLoading(false);
-    }
-  };
+
 
   const renderActionDialog = () => {
     if (!actionVisit || !actionType) return null;
@@ -344,74 +320,15 @@ export default function VisitsPage() {
         description="Track, schedule, and complete home visits for registered senior citizens"
         currentPath="/visits"
       >
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap gap-3">
-              <Input
-                placeholder="Search citizen, officer, or phone"
-                value={filters.search}
-                onChange={(e) => {
-                  setPage(1);
-                  setFilters((prev) => ({ ...prev, search: e.target.value }));
-                }}
-                className="max-w-sm"
-              />
-              <Select
-                value={filters.status}
-                onValueChange={(value) => {
-                  setPage(1);
-                  setFilters((prev) => ({ ...prev, status: value }));
-                }}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Scheduled">Scheduled</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={filters.visitType}
-                onValueChange={(value) => {
-                  setPage(1);
-                  setFilters((prev) => ({ ...prev, visitType: value }));
-                }}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Visit type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Routine">Routine</SelectItem>
-                  <SelectItem value="Follow-up">Follow-up</SelectItem>
-                  <SelectItem value="Emergency">Emergency</SelectItem>
-                  <SelectItem value="Verification">Verification</SelectItem>
-                </SelectContent>
-              </Select>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn('w-[220px] justify-start text-left font-normal', !dateFilter && 'text-muted-foreground')}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateFilter ? format(dateFilter, 'PPP') : 'Filter by date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateFilter}
-                    onSelect={(date) => {
-                      setDateFilter(date);
-                      setPage(1);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+        <div className="space-y-4">
+          {/* Top Action Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-slate-500 font-medium">
+                {pagination?.total !== undefined ? `${pagination.total} total visits recorded` : 'Managing home visits and verifications'}
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <ExportButton
                 type="visits"
                 filters={{
@@ -422,12 +339,146 @@ export default function VisitsPage() {
                   endDate: dateFilter ? format(dateFilter, 'yyyy-MM-dd') : undefined
                 }}
               />
-              <Button variant="outline" onClick={handleAutoSchedule} disabled={autoScheduleLoading}>
-                {autoScheduleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '🤖 Auto-Schedule'}
+              <Button
+                onClick={() => router.push('/visits/schedule')}
+                className="bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all"
+              >
+                + Schedule Visit
               </Button>
-              <Button onClick={() => router.push('/visits/schedule')}>+ Schedule Visit</Button>
             </div>
           </div>
+
+          {/* Search & Filters Accordion (Closed by default) */}
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="filters" className="border border-slate-200/90 bg-white rounded-xl shadow-2xs overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50/80 transition-colors">
+                <div className="flex items-center gap-2 text-slate-800 font-bold text-xs sm:text-sm">
+                  <Filter className="h-4 w-4 text-indigo-600 shrink-0" />
+                  <span>Search & Filter Visits</span>
+                  {((filters.search ? 1 : 0) + (filters.status !== 'all' ? 1 : 0) + (filters.visitType !== 'all' ? 1 : 0) + (dateFilter ? 1 : 0)) > 0 && (
+                    <Badge className="bg-indigo-100 text-indigo-900 border-indigo-200 text-[10px] font-bold px-2 py-0.5 ml-1">
+                      {(filters.search ? 1 : 0) + (filters.status !== 'all' ? 1 : 0) + (filters.visitType !== 'all' ? 1 : 0) + (dateFilter ? 1 : 0)} Active
+                    </Badge>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pt-2 pb-4 border-t border-slate-100 bg-slate-50/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+                  {/* Search input */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Search</label>
+                    <Input
+                      placeholder="Search citizen, officer, phone"
+                      value={filters.search}
+                      onChange={(e) => {
+                        setPage(1);
+                        setFilters((prev) => ({ ...prev, search: e.target.value }));
+                      }}
+                      className="bg-white border-slate-300 text-xs h-9 font-medium shadow-2xs"
+                    />
+                  </div>
+
+                  {/* Status select */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Status</label>
+                    <Select
+                      value={filters.status}
+                      onValueChange={(value) => {
+                        setPage(1);
+                        setFilters((prev) => ({ ...prev, status: value }));
+                      }}
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-300 text-xs h-9 font-medium shadow-2xs">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-slate-300">
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="Scheduled">Scheduled</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Visit type select */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Visit Type</label>
+                    <Select
+                      value={filters.visitType}
+                      onValueChange={(value) => {
+                        setPage(1);
+                        setFilters((prev) => ({ ...prev, visitType: value }));
+                      }}
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-300 text-xs h-9 font-medium shadow-2xs">
+                        <SelectValue placeholder="Visit type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-slate-300">
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="Routine">Routine</SelectItem>
+                        <SelectItem value="Follow-up">Follow-up</SelectItem>
+                        <SelectItem value="Emergency">Emergency</SelectItem>
+                        <SelectItem value="Verification">Verification</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date filter */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Date</label>
+                      {dateFilter && (
+                        <button
+                          type="button"
+                          onClick={() => { setDateFilter(undefined); setPage(1); }}
+                          className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn('w-full justify-start text-left font-medium text-xs h-9 bg-white border-slate-300 shadow-2xs', !dateFilter && 'text-muted-foreground')}>
+                          <CalendarIcon className="mr-2 h-3.5 w-3.5 text-indigo-600" />
+                          {dateFilter ? format(dateFilter, 'PPP') : 'Filter by date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="p-0 bg-white border-slate-300 shadow-xl">
+                        <Calendar
+                          mode="single"
+                          selected={dateFilter}
+                          onSelect={(date) => {
+                            setDateFilter(date);
+                            setPage(1);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                {/* Reset row when filters are active */}
+                {((filters.search ? 1 : 0) + (filters.status !== 'all' ? 1 : 0) + (filters.visitType !== 'all' ? 1 : 0) + (dateFilter ? 1 : 0)) > 0 && (
+                  <div className="mt-3 pt-2 border-t border-slate-200 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilters({ search: '', status: 'all', visitType: 'all' });
+                        setDateFilter(undefined);
+                        setPage(1);
+                      }}
+                      className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold h-7 px-2"
+                    >
+                      Clear All Filters
+                    </Button>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           <Card>
             <CardHeader className="pb-3">

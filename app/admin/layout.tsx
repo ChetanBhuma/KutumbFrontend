@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 const getPageInfo = (pathname: string) => {
     // Exact matches
     if (pathname === '/admin/dashboard') {
-        return { title: 'Dashboard Overview', description: 'Monitor key metrics and system status' };
+        return { title: 'Station House Officer (SHO) dashboard', description: 'Real-time jurisdiction monitoring, beat workforce allocation, and senior citizen safety operations' };
     }
 
     // Pattern matches

@@ -13,7 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
     Loader2, ArrowLeft, MapPin, Phone,
     Navigation, CheckCircle2, Shield, Stethoscope, AlertTriangle, Home,
-    ChevronDown, ChevronUp, UserX, AlertOctagon, HeartPulse, Wallet, Users
+    ChevronDown, ChevronUp, UserX, AlertOctagon, HeartPulse, Wallet, Users,
+    Calendar, Clock, FileText
 } from 'lucide-react';
 import apiClient from '@/lib/api-client';
 import { format } from 'date-fns';
@@ -352,10 +353,37 @@ export default function VisitDetailPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3 pt-0 pl-6">
-                        <div className="flex items-start gap-2 text-sm text-muted-foreground bg-slate-50 p-2 rounded-md">
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground bg-slate-50 p-2.5 rounded-md border border-slate-100">
                             <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-                            <span>{visit.SeniorCitizen?.permanentAddress}</span>
+                            <span className="text-slate-900 font-medium">{visit.SeniorCitizen?.permanentAddress}</span>
                         </div>
+
+                        {visit.scheduledDate && (
+                            <div className="flex flex-wrap items-center gap-2 text-xs bg-indigo-50/60 p-2.5 rounded-md border border-indigo-100">
+                                <div className="flex items-center gap-1.5 font-semibold text-slate-900">
+                                    <Calendar className="h-4 w-4 text-indigo-600" />
+                                    <span>{format(new Date(visit.scheduledDate), 'EEEE, dd MMMM yyyy')}</span>
+                                </div>
+                                <span className="text-slate-300">•</span>
+                                <div className="flex items-center gap-1 text-indigo-700 font-bold">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    <span>
+                                        {visit.notes && visit.notes.includes('[Time Slot:')
+                                            ? (visit.notes.match(/\[Time Slot:\s*([^\]]+)\]/)?.[1] || format(new Date(visit.scheduledDate), 'hh:mm a'))
+                                            : format(new Date(visit.scheduledDate), 'hh:mm a')
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {visit.notes && !visit.notes.startsWith('[Time Slot:') && (
+                            <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded-md border border-slate-100 flex items-start gap-1.5">
+                                <FileText className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                                <span>{visit.notes}</span>
+                            </div>
+                        )}
+
                         <div className="flex gap-2">
                             <Button variant="outline" className="flex-1 h-9 text-xs" onClick={() => window.location.href = `tel:${visit.SeniorCitizen?.mobileNumber}`}>
                                 <Phone className="h-3.5 w-3.5 mr-2" /> Call

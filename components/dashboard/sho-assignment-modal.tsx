@@ -1,15 +1,39 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import apiClient from '@/lib/api-client';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Sheet,
+    SheetContent,
+    SheetTitle
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldCheck, UserCheck, Calendar, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format, setHours, setMinutes } from 'date-fns';
+import {
+    Calendar as CalendarIcon,
+    Loader2,
+    ShieldCheck,
+    UserCheck,
+    AlertCircle,
+    User,
+    Building2,
+    CheckCircle2,
+    Clock,
+    Sun,
+    Sunset,
+    Moon,
+    Check,
+    FileText,
+    Send
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface AssignModalItem {
@@ -20,6 +44,7 @@ export interface AssignModalItem {
     mobileNumber?: string;
     policeStationId?: string;
     policeStationName?: string;
+    beatId?: string;
     defaultDate?: string;
     visitType?: string;
     notes?: string;
@@ -33,6 +58,7 @@ interface Officer {
     policeStationId?: string;
     beatId?: string;
     Beat?: { name: string; code?: string };
+    beatName?: string;
     _count?: { Visit: number };
 }
 
@@ -43,6 +69,43 @@ interface SHOAssignmentModalProps {
     onSuccess: () => void;
 }
 
+const TIME_SLOTS = [
+    {
+        id: "morning",
+        label: "Morning",
+        timeRange: "09:00 AM – 12:00 PM",
+        defaultHour: 10,
+        defaultMinute: 0,
+        icon: Sun,
+        desc: "Ideal for morning check"
+    },
+    {
+        id: "afternoon",
+        label: "Afternoon",
+        timeRange: "12:00 PM – 03:00 PM",
+        defaultHour: 13,
+        defaultMinute: 30,
+        icon: Sunset,
+        desc: "Post-lunch check-in"
+    },
+    {
+        id: "evening",
+        label: "Evening",
+        timeRange: "03:00 PM – 06:00 PM",
+        defaultHour: 16,
+        defaultMinute: 30,
+        icon: Moon,
+        desc: "Evening safety visit"
+    }
+];
+
+const QUICK_INSTRUCTIONS = [
+    "Verify permanent address & ID proof",
+    "Check physical wellbeing & living condition",
+    "Meet emergency contact / caregiver",
+    "Assist with Delhi Police Senior Citizen Card"
+];
+
 export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOAssignmentModalProps) {
     const [officers, setOfficers] = useState<Officer[]>([]);
     const [loadingOfficers, setLoadingOfficers] = useState(false);
@@ -50,7 +113,10 @@ export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOA
     const [error, setError] = useState('');
 
     const [selectedOfficerId, setSelectedOfficerId] = useState('');
-    const [scheduledDate, setScheduledDate] = useState('');
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    const [selectedSlotId, setSelectedSlotId] = useState<string>("morning");
+    const [customTime, setCustomTime] = useState<string>("10:00");
+    const [isCustomTime, setIsCustomTime] = useState<boolean>(false);
     const [visitType, setVisitType] = useState('Verification');
     const [notes, setNotes] = useState('');
 
@@ -58,28 +124,53 @@ export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOA
         if (open && item) {
             setError('');
             setSelectedOfficerId('');
-            const defaultDt = item.defaultDate
-                ? new Date(item.defaultDate).toISOString().slice(0, 16)
-                : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-            setScheduledDate(defaultDt);
+            const targetDate = item.defaultDate ? new Date(item.defaultDate) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+            setSelectedDate(targetDate);
+            setSelectedSlotId("morning");
+            setIsCustomTime(false);
             setVisitType(item.type === 'VERIFICATION' ? 'Verification' : item.visitType || 'Follow-up');
             setNotes(item.notes || '');
 
-            fetchStationOfficers(item.policeStationId);
+            fetchStationOfficers(item.policeStationId, item.beatId);
         }
     }, [open, item]);
 
-    const fetchStationOfficers = async (policeStationId?: string) => {
+    const fetchStationOfficers = async (policeStationId?: string, citizenBeatId?: string) => {
         try {
             setLoadingOfficers(true);
-            const params: any = { limit: 100, isActive: true };
+            const params: any = { limit: 100, isActive: true, hasBeat: true };
             if (policeStationId) {
                 params.policeStationId = policeStationId;
             }
             const res: any = await apiClient.get('/officers', { params });
-            if (res.success) {
-                const list = res.data?.officers || res.data?.data || [];
-                setOfficers(list);
+            const raw = res?.data || res;
+            const items: Officer[] = Array.isArray(raw)
+                ? raw
+                : (raw?.officers || raw?.items || raw?.data?.items || raw?.data || []);
+
+            // Strictly filter for beat-assigned officers
+            const beatAssignedOfficers = items.filter((o: any) => {
+                return !!(o.beatId && (o.Beat?.name || o.beatName || o.beat));
+            });
+
+            // Sort so matching citizen beat officer appears at the top
+            const sorted = [...beatAssignedOfficers].sort((a, b) => {
+                if (citizenBeatId) {
+                    if (a.beatId === citizenBeatId && b.beatId !== citizenBeatId) return -1;
+                    if (b.beatId === citizenBeatId && a.beatId !== citizenBeatId) return 1;
+                }
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+            setOfficers(sorted);
+
+            if (sorted.length > 0) {
+                const exactMatch = citizenBeatId ? sorted.find(o => o.beatId === citizenBeatId) : null;
+                if (exactMatch) {
+                    setSelectedOfficerId(exactMatch.id);
+                } else {
+                    setSelectedOfficerId(sorted[0].id);
+                }
             }
         } catch (err: any) {
             console.error('Failed to load station officers', err);
@@ -89,15 +180,47 @@ export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOA
         }
     };
 
+    const calculateFinalScheduledDate = (): Date | undefined => {
+        if (!selectedDate) return undefined;
+
+        let targetDate = new Date(selectedDate);
+        if (isCustomTime && customTime) {
+            const [hours, minutes] = customTime.split(":").map(Number);
+            targetDate = setHours(setMinutes(targetDate, minutes || 0), hours || 10);
+        } else {
+            const slot = TIME_SLOTS.find(s => s.id === selectedSlotId) || TIME_SLOTS[0];
+            targetDate = setHours(setMinutes(targetDate, slot.defaultMinute), slot.defaultHour);
+        }
+        return targetDate;
+    };
+
+    const getSlotLabel = (): string => {
+        if (isCustomTime) {
+            return `Custom Time (${customTime})`;
+        }
+        const slot = TIME_SLOTS.find(s => s.id === selectedSlotId);
+        return slot ? `${slot.label} (${slot.timeRange})` : "Morning";
+    };
+
+    const handleQuickInstruction = (inst: string) => {
+        if (!notes) {
+            setNotes(inst);
+        } else if (!notes.includes(inst)) {
+            setNotes(`${notes}; ${inst}`);
+        }
+    };
+
     const handleAssign = async () => {
         if (!item) return;
+
+        const finalDate = calculateFinalScheduledDate();
 
         if (!selectedOfficerId) {
             setError('Please select an officer for assignment.');
             return;
         }
 
-        if (!scheduledDate) {
+        if (!finalDate) {
             setError('Please select a visit date and time.');
             return;
         }
@@ -106,12 +229,17 @@ export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOA
             setSubmitting(true);
             setError('');
 
+            const slotInfo = getSlotLabel();
+            const fullNotes = notes
+                ? `[Time Slot: ${slotInfo}] ${notes}`
+                : `[Time Slot: ${slotInfo}] Police station assigned field visit`;
+
             if (item.type === 'VERIFICATION') {
                 // Call verification assignment API
                 const res: any = await apiClient.assignVerificationRequest(item.id, {
                     officerId: selectedOfficerId,
-                    scheduledDate: new Date(scheduledDate).toISOString(),
-                    notes: notes || undefined
+                    scheduledDate: finalDate.toISOString(),
+                    notes: fullNotes
                 });
 
                 if (res.success) {
@@ -126,9 +254,10 @@ export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOA
                 const res: any = await apiClient.createVisit({
                     seniorCitizenId: item.citizenId,
                     officerId: selectedOfficerId,
-                    scheduledDate: new Date(scheduledDate).toISOString(),
+                    scheduledDate: finalDate.toISOString(),
                     visitType: visitType || 'Follow-up',
-                    notes: notes || undefined
+                    policeStationId: item.policeStationId,
+                    notes: fullNotes
                 });
 
                 if (res.success) {
@@ -155,153 +284,311 @@ export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOA
         }
     };
 
-    const selectedOfficer = officers.find(o => o.id === selectedOfficerId);
-
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[540px]">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-primary text-xl">
-                        <ShieldCheck className="h-6 w-6 text-primary" />
-                        {item?.type === 'VERIFICATION' ? 'Assign Officer for Verification' : 'Assign Officer for Re-visit'}
-                    </DialogTitle>
-                    <DialogDescription>
-                        Assign an active field officer from the police station to conduct the visit for{' '}
-                        <span className="font-semibold text-slate-800">{item?.citizenName}</span>.
-                    </DialogDescription>
-                </DialogHeader>
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="right" className="w-full sm:max-w-md md:max-w-lg flex flex-col justify-between p-0 bg-white border-l border-slate-300 shadow-2xl">
+                {/* Solid High-Contrast Header */}
+                <div className="p-5 sm:p-6 border-b border-indigo-900 bg-indigo-950 text-white shadow-md">
+                    <SheetTitle className="text-base sm:text-lg font-bold text-white tracking-tight">
+                        {item?.type === 'VERIFICATION' ? 'Assign Beat Officer for Verification' : 'Assign Beat Officer for Visit'}
+                    </SheetTitle>
 
-                {error && (
-                    <Alert variant="destructive" className="my-2">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
-
-                <div className="space-y-4 py-2">
-                    {/* Citizen summary badge */}
-                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center justify-between text-sm">
-                        <div>
-                            <span className="text-muted-foreground">Citizen: </span>
-                            <span className="font-semibold">{item?.citizenName}</span>
-                            {item?.mobileNumber && <span className="text-xs text-muted-foreground ml-2">({item.mobileNumber})</span>}
+                    {/* Solid Citizen Context Card */}
+                    {item && (
+                        <div className="mt-4 p-3 rounded-lg bg-indigo-900 border border-indigo-700 flex items-center justify-between gap-2 text-xs shadow-inner">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <User className="h-4 w-4 text-indigo-300 shrink-0" />
+                                <div className="min-w-0">
+                                    <span className="font-bold text-white truncate text-sm block">{item.citizenName || "Applicant"}</span>
+                                    {item.mobileNumber && (
+                                        <span className="text-[11px] text-indigo-200 font-mono">{item.mobileNumber}</span>
+                                    )}
+                                </div>
+                            </div>
+                            {item.policeStationName && (
+                                <div className="flex items-center gap-1.5 shrink-0 text-white bg-indigo-800 border border-indigo-600 px-2.5 py-1 rounded-md text-xs font-semibold shadow-xs">
+                                    <Building2 className="h-3.5 w-3.5 text-indigo-300" />
+                                    <span>PS: {item.policeStationName}</span>
+                                </div>
+                            )}
                         </div>
-                        <Badge variant="secondary" className="capitalize">
-                            {item?.type === 'VERIFICATION' ? 'Initial Verification' : item?.visitType || 'Re-visit'}
+                    )}
+                </div>
+
+                {/* Form Body with Solid Backgrounds */}
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 bg-slate-100/90">
+                    {error && (
+                        <Alert variant="destructive" className="bg-rose-50 border-rose-200 text-rose-900">
+                            <AlertCircle className="h-4 w-4 text-rose-600" />
+                            <AlertDescription className="text-xs font-semibold">{error}</AlertDescription>
+                        </Alert>
+                    )}
+
+                    {/* 1. Visit Type Solid Card */}
+                    <div className="p-3.5 bg-white rounded-xl border border-slate-300 shadow-sm flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <CheckCircle2 className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-900">
+                                    {item?.type === 'VERIFICATION' ? 'Physical Verification Visit' : `${visitType} Duty`}
+                                </p>
+                                <p className="text-[11px] text-slate-600 font-medium">
+                                    {item?.type === 'VERIFICATION'
+                                        ? 'Mandatory police check before registration approval'
+                                        : 'Assigned senior citizen wellness check'}
+                                </p>
+                            </div>
+                        </div>
+                        <Badge className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5">
+                            {item?.type === 'VERIFICATION' ? 'Required' : 'Priority'}
                         </Badge>
                     </div>
 
-                    {/* Officer Selection */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700 flex items-center justify-between">
-                            <span>Select Station Officer</span>
-                            {loadingOfficers && <span className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Loading officers...</span>}
-                        </label>
-                        <Select
-                            value={selectedOfficerId}
-                            onValueChange={(val) => {
-                                setSelectedOfficerId(val);
-                                setError('');
-                            }}
-                            disabled={loadingOfficers}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Choose a field officer from this Police Station" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-64">
-                                {officers.length === 0 ? (
-                                    <div className="p-3 text-center text-sm text-muted-foreground">No active officers found for this station.</div>
-                                ) : (
-                                    officers.map((officer) => (
-                                        <SelectItem key={officer.id} value={officer.id}>
-                                            <div className="flex items-center justify-between gap-4 w-full">
-                                                <span className="font-medium">{officer.name}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {officer.rank || 'Officer'} · {officer.badgeNumber || 'No Badge'}
-                                                    {officer.Beat ? ` · Beat: ${officer.Beat.name}` : ''}
-                                                    {typeof officer._count?.Visit === 'number' ? ` (${officer._count.Visit} active visits)` : ''}
-                                                </span>
-                                            </div>
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
-
-                        {selectedOfficer && (
-                            <div className="text-xs bg-blue-50/70 border border-blue-200 text-blue-900 p-2.5 rounded-md flex items-center gap-2">
-                                <UserCheck className="h-4 w-4 text-blue-600 shrink-0" />
-                                <span>
-                                    <strong>{selectedOfficer.name}</strong> ({selectedOfficer.rank || 'Field Officer'}) · Badge: {selectedOfficer.badgeNumber || 'N/A'}
-                                    {selectedOfficer.Beat && ` · Assigned Beat: ${selectedOfficer.Beat.name}`}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Scheduled Date & Time */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                            <Calendar className="h-4 w-4 text-primary" />
-                            Scheduled Visit Date & Time
-                        </label>
-                        <Input
-                            type="datetime-local"
-                            value={scheduledDate}
-                            onChange={(e) => setScheduledDate(e.target.value)}
-                            min={new Date().toISOString().slice(0, 16)}
-                        />
-                    </div>
-
-                    {/* Visit Type (for Re-visits) */}
+                    {/* Visit Type Selector for Re-visits */}
                     {item?.type === 'REVISIT' && (
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700">Visit Purpose / Type</label>
+                        <div className="p-3.5 bg-white rounded-xl border border-slate-300 shadow-sm space-y-2">
+                            <label className="text-xs font-bold text-slate-900 uppercase tracking-wider">Visit Purpose / Type</label>
                             <Select value={visitType} onValueChange={setVisitType}>
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full text-xs h-9 border-slate-300 bg-white font-bold text-slate-900">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Follow-up">Follow-up Re-visit (Vulnerability Assessment)</SelectItem>
+                                <SelectContent className="z-50 bg-white border-slate-300">
+                                    <SelectItem value="Follow-up">Regular Follow-up Visit</SelectItem>
                                     <SelectItem value="Verification">Verification Visit</SelectItem>
-                                    <SelectItem value="Routine">Routine Inspection</SelectItem>
-                                    <SelectItem value="Emergency">Emergency Welfare Check</SelectItem>
+                                    <SelectItem value="Routine">Routine Welfare Check</SelectItem>
+                                    <SelectItem value="Emergency">Emergency Visit</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     )}
 
-                    {/* Notes / Special Instructions */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700">Special Instructions for Officer (Optional)</label>
+                    {/* 2. Date & Time Selection Solid Card */}
+                    <div className="p-4 bg-white rounded-xl border border-slate-300 shadow-sm space-y-3.5">
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <label className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                                <Clock className="h-4 w-4 text-indigo-700" />
+                                Visit Date & Time Slot
+                            </label>
+                            {selectedDate && (
+                                <Badge className="text-[11px] bg-indigo-100 text-indigo-900 border border-indigo-300 font-bold px-2 py-0.5">
+                                    {format(selectedDate, "dd MMM")} • {isCustomTime ? customTime : TIME_SLOTS.find(s => s.id === selectedSlotId)?.label}
+                                </Badge>
+                            )}
+                        </div>
+
+                        {/* Date Picker Button */}
+                        <div className="space-y-1">
+                            <span className="text-[11px] font-bold text-slate-700">Select Date</span>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "w-full justify-start text-left font-semibold text-xs h-10 border-slate-300 bg-white hover:bg-slate-50 text-slate-900 shadow-xs",
+                                            !selectedDate && "text-slate-500"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4 text-indigo-600" />
+                                        {selectedDate ? (
+                                            <span className="font-bold text-slate-900 text-xs">
+                                                {format(selectedDate, "EEEE, dd MMMM yyyy")}
+                                            </span>
+                                        ) : (
+                                            <span>Pick a scheduled date</span>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 z-50 shadow-2xl border-slate-300 bg-white" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={selectedDate}
+                                        onSelect={setSelectedDate}
+                                        initialFocus
+                                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                        className="bg-white"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {/* Time Slots Grid with Solid Colors */}
+                        <div className="space-y-1.5 pt-1">
+                            <span className="text-[11px] font-bold text-slate-700">Choose Convenient Window</span>
+                            <div className="grid grid-cols-3 gap-2">
+                                {TIME_SLOTS.map((slot) => {
+                                    const Icon = slot.icon;
+                                    const isSelected = !isCustomTime && selectedSlotId === slot.id;
+                                    return (
+                                        <button
+                                            key={slot.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setIsCustomTime(false);
+                                                setSelectedSlotId(slot.id);
+                                            }}
+                                            className={cn(
+                                                "flex flex-col items-start p-2.5 rounded-lg border text-left transition-all duration-150 relative select-none",
+                                                isSelected
+                                                    ? "bg-indigo-700 text-white border-indigo-800 shadow-md ring-2 ring-indigo-500"
+                                                    : "bg-slate-50 text-slate-900 border-slate-300 hover:bg-slate-100 hover:border-slate-400"
+                                            )}
+                                        >
+                                            <div className="flex items-center justify-between w-full mb-1">
+                                                <Icon className={cn("h-4 w-4", isSelected ? "text-white" : "text-indigo-700")} />
+                                                {isSelected && <Check className="h-3.5 w-3.5 text-white stroke-[3]" />}
+                                            </div>
+                                            <span className="text-xs font-bold leading-tight">{slot.label}</span>
+                                            <span className={cn("text-[10px] mt-0.5 leading-tight font-semibold", isSelected ? "text-indigo-100" : "text-slate-600")}>
+                                                {slot.timeRange.replace(" – ", "-")}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Custom Time Toggle */}
+                            <div className="pt-2 flex items-center justify-between text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCustomTime(!isCustomTime)}
+                                    className="text-xs text-indigo-700 hover:text-indigo-900 font-bold underline underline-offset-2"
+                                >
+                                    {isCustomTime ? "← Use standard time window" : "+ Set custom exact time"}
+                                </button>
+
+                                {isCustomTime && (
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[11px] text-slate-700 font-bold">Exact Time:</span>
+                                        <Input
+                                            type="time"
+                                            value={customTime}
+                                            onChange={(e) => setCustomTime(e.target.value)}
+                                            className="h-8 w-28 text-xs bg-white border-slate-300 font-bold font-mono text-slate-900"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. Assign Beat Officer Solid Card */}
+                    <div className="p-4 bg-white rounded-xl border border-slate-300 shadow-sm space-y-2.5">
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <label className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                                <UserCheck className="h-4 w-4 text-indigo-700" />
+                                Assign Beat Officer
+                            </label>
+                            {loadingOfficers && <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-700" />}
+                        </div>
+
+                        <Select value={selectedOfficerId} onValueChange={(val) => { setSelectedOfficerId(val); setError(''); }}>
+                            <SelectTrigger className="w-full text-xs h-10 border-slate-300 bg-white shadow-xs font-bold text-slate-900">
+                                <SelectValue placeholder={loadingOfficers ? "Loading station beat officers..." : "Choose beat officer..."} />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60 z-50 bg-white border-slate-300 shadow-xl">
+                                {officers.map((officer) => {
+                                    const isCitizenBeat = item?.beatId && officer.beatId === item.beatId;
+                                    const beatName = officer.Beat?.name || officer.beatName || "Assigned Beat";
+                                    return (
+                                        <SelectItem key={officer.id} value={officer.id} className="text-xs py-2.5 hover:bg-slate-100">
+                                            <div className="flex items-center justify-between gap-3 w-full">
+                                                <span className="font-bold text-slate-900">
+                                                    {officer.name} <span className="font-medium text-slate-600">({officer.rank || 'Beat Officer'})</span>
+                                                </span>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {officer.badgeNumber && (
+                                                        <span className="text-[10px] font-mono font-bold text-slate-600">
+                                                            #{officer.badgeNumber}
+                                                        </span>
+                                                    )}
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-[10px] px-2 py-0.5 font-bold",
+                                                            isCitizenBeat
+                                                                ? "bg-emerald-100 text-emerald-900 border-emerald-400 shadow-xs"
+                                                                : "bg-slate-100 text-slate-800 border-slate-300"
+                                                        )}
+                                                    >
+                                                        {isCitizenBeat ? `★ Beat: ${beatName}` : `Beat: ${beatName}`}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </SelectItem>
+                                    );
+                                })}
+
+                                {!loadingOfficers && officers.length === 0 && (
+                                    <SelectItem value="none" disabled className="text-slate-500 font-medium">
+                                        No beat-assigned officers found for this police station
+                                    </SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+
+                        <p className="text-[11px] text-slate-600 font-medium">
+                            Only officers assigned to a beat in this police station can be assigned verification duties.
+                        </p>
+                    </div>
+
+                    {/* 4. Instructions for Officer Solid Card */}
+                    <div className="p-4 bg-white rounded-xl border border-slate-300 shadow-sm space-y-2.5">
+                        <label className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <FileText className="h-4 w-4 text-slate-600" />
+                            Officer Instructions (Optional)
+                        </label>
+
                         <Textarea
-                            placeholder="Enter any priority notes, medical flags, or specific instructions..."
+                            placeholder="Add specific guidance or verification notes for the beat officer..."
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            rows={3}
+                            rows={2}
+                            className="text-xs resize-none border-slate-300 bg-white font-medium text-slate-900 shadow-xs focus:border-indigo-600"
                         />
+
+                        {/* Quick Suggestion Solid Chips */}
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                            {QUICK_INSTRUCTIONS.map((inst, i) => (
+                                <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => handleQuickInstruction(inst)}
+                                    className="text-[10px] px-2.5 py-1 rounded-full bg-slate-100 hover:bg-indigo-100 text-slate-800 hover:text-indigo-950 font-semibold transition-colors border border-slate-300"
+                                >
+                                    + {inst}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0">
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+                {/* Solid Action Footer */}
+                <div className="p-4 sm:p-5 border-t border-slate-300 bg-white flex items-center justify-between gap-3 shadow-xl">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => onOpenChange(false)}
+                        className="text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={handleAssign} disabled={submitting || !selectedOfficerId || !scheduledDate} className="gap-1.5">
+                    <Button
+                        type="button"
+                        onClick={handleAssign}
+                        disabled={submitting || !selectedDate || !selectedOfficerId}
+                        className="text-xs font-bold px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white shadow-md hover:shadow-lg gap-2"
+                    >
                         {submitting ? (
-                            <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Assigning Officer...
-                            </>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                            <>
-                                <UserCheck className="h-4 w-4" />
-                                Confirm Assignment
-                            </>
+                            <Send className="h-3.5 w-3.5" />
                         )}
+                        Confirm Assignment & Send to App
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </div>
+            </SheetContent>
+        </Sheet>
     );
 }

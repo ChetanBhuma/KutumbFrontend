@@ -396,6 +396,8 @@ class ApiClient {
         beatId?: string;
         vulnerabilityLevel?: string;
         verificationStatus?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
     }) {
         return this.get<any>('/citizens', { params });
     }
@@ -641,6 +643,29 @@ class ApiClient {
 
     async getVisitRequests(params?: { status?: string }) {
         return this.get<any>('/citizen-portal/visit-requests', { params });
+    }
+
+    async getRevisitsDue(params?: { policeStationId?: string; beatId?: string }) {
+        return this.get<any>('/visits/revisits-due', { params });
+    }
+
+    async getVisits(params?: any) {
+        return this.get<any>('/visits', { params });
+    }
+
+    async createVisit(data: {
+        seniorCitizenId: string;
+        officerId: string;
+        scheduledDate: string;
+        visitType: string;
+        notes?: string;
+        priority?: string;
+    }) {
+        return this.post<any>('/visits', data);
+    }
+
+    async scheduleVisit(data: any) {
+        return this.post<any>('/visits', data);
     }
 
     async updateVisitRequest(id: string, status: string) {

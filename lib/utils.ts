@@ -81,3 +81,25 @@ export const calculateProfileCompleteness = (data: any) => {
 
     return fields.length > 0 ? Math.round((filledCount / fields.length) * 100) : 0;
 };
+
+export const isShoOrInspectorUser = (user: any): boolean => {
+    if (!user) return false;
+    const role = String(user.role || '').toUpperCase();
+    const roleLevel = String(user.roleLevel || '').toUpperCase();
+    const roleLabel = String(user.roleLabel || '').toUpperCase();
+    const designation = String(user.designation || user.officerProfile?.designation || '').toUpperCase();
+    const rank = String(user.rank || user.officerProfile?.rank || '').toUpperCase();
+
+    return (
+        role === 'SHO' ||
+        role === 'INSPECTOR' ||
+        roleLevel === 'SHO' ||
+        roleLabel.includes('SHO') ||
+        roleLabel.includes('INSPECTOR') ||
+        designation.includes('SHO') ||
+        designation.includes('INSPECTOR') ||
+        rank.includes('SHO') ||
+        rank.includes('INSPECTOR')
+    );
+};
+
