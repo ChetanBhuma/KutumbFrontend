@@ -206,9 +206,14 @@ export default function CitizenDashboard() {
                                                         <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-sm sm:text-base text-slate-900">{visit.visitType || 'Routine Visit'}</p>
+                                                        <p className="font-semibold text-sm sm:text-base text-slate-900">
+                                                            {visit.visitType === 'Verification' ? 'Verification Visit' : (visit.visitType || 'Routine Visit')}
+                                                        </p>
                                                         <p className="text-xs sm:text-sm text-slate-500">
                                                             {new Date(visit.scheduledDate || visit.createdAt).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                                                            {visit.officer?.name 
+                                                                ? ` • Assigned: ${visit.officer.name}` 
+                                                                : (visit.notes ? ` • ${visit.notes}` : '')}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -390,11 +395,21 @@ function StatusCard({ icon, title, value, subtext, color, onClick }: any) {
 
 
 function getStatusColor(status: string) {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
         case 'completed': return 'bg-green-100 text-green-700';
-        case 'pending': return 'bg-amber-100 text-amber-700';
-        case 'cancelled': return 'bg-red-100 text-red-700';
-        case 'scheduled': return 'bg-blue-100 text-blue-700';
+        case 'pending': 
+        case 'pending verification':
+        case 'pending assignment':
+        case 'pending review':
+            return 'bg-amber-100 text-amber-700';
+        case 'cancelled': 
+        case 'rejected':
+            return 'bg-red-100 text-red-700';
+        case 'scheduled': 
+        case 'in progress':
+        case 'in_progress':
+        case 'assigned':
+            return 'bg-blue-100 text-blue-700';
         default: return 'bg-slate-100 text-slate-700';
     }
 }

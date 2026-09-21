@@ -84,7 +84,7 @@ export default function CitizenVisitsPage() {
                                             <Calendar className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold">{visit.visitType}</h3>
+                                            <h3 className="font-semibold">{visit.visitType === 'Verification' ? 'Verification Visit' : visit.visitType}</h3>
                                             <p className="text-sm text-muted-foreground">
                                                 {new Date(visit.scheduledDate || visit.createdAt).toLocaleDateString(undefined, {
                                                     weekday: 'long',
@@ -93,19 +93,32 @@ export default function CitizenVisitsPage() {
                                                     day: 'numeric'
                                                 })}
                                             </p>
-                                            {visit.officer && (
+                                            {visit.officer ? (
                                                 <p className="mt-1 text-sm text-slate-600">
-                                                    Officer: {visit.officer.name} ({visit.officer.rank})
+                                                    Officer: {visit.officer.name} ({visit.officer.rank || 'Beat Officer'})
                                                 </p>
+                                            ) : (
+                                                visit.notes && (
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        {visit.notes}
+                                                    </p>
+                                                )
                                             )}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <Badge variant={
-                                            visit.status === 'Completed' ? 'default' :
-                                                visit.status === 'Scheduled' ? 'secondary' :
-                                                    'outline'
-                                        }>
+                                        <Badge 
+                                            variant={
+                                                visit.status?.toLowerCase() === 'completed' ? 'default' :
+                                                    ['scheduled', 'assigned', 'in progress', 'in_progress'].includes(visit.status?.toLowerCase()) ? 'secondary' :
+                                                        'outline'
+                                            }
+                                            className={
+                                                ['pending', 'pending verification', 'pending review'].includes(visit.status?.toLowerCase())
+                                                    ? 'border-amber-300 text-amber-800 bg-amber-50'
+                                                    : ''
+                                            }
+                                        >
                                             {visit.status}
                                         </Badge>
                                         {visit.status === 'Completed' && (

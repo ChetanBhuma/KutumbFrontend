@@ -179,6 +179,13 @@ function AdminLoginContent() {
                     label: "Staff Login",
                     href: "/admin/login"
                 }}
+                badgeIcon={
+                    <img
+                        src="/DP%20logo.png"
+                        alt="Delhi Police Logo"
+                        className="h-10 w-10 sm:h-14 sm:w-14 object-contain drop-shadow-md"
+                    />
+                }
             >
                 <Card className="shadow-2xl border-slate-700/80 bg-[#0c182b]/90 backdrop-blur-2xl text-slate-100 rounded-2xl overflow-hidden">
                     <CardHeader className="space-y-1">
@@ -268,6 +275,13 @@ function AdminLoginContent() {
                 href: "/citizen-portal/login",
                 variant: "outline"
             }}
+            badgeIcon={
+                <img
+                    src="/DP%20logo.png"
+                    alt="Delhi Police Logo"
+                    className="h-10 w-10 sm:h-14 sm:w-14 object-contain drop-shadow-md"
+                />
+            }
         >
             <Card className="shadow-2xl border-slate-700/80 bg-[#0c182b]/90 backdrop-blur-2xl text-slate-100 rounded-2xl overflow-hidden">
                 <CardContent className="p-4 sm:p-6 md:pt-8">

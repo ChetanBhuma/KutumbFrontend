@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,16 @@ export function SHOVerificationTab({
     });
   };
 
+  // Sort descending by date so latest verification request is always on the top row
+  const sortedVerifications = useMemo(() => {
+    if (!verifications || !Array.isArray(verifications)) return [];
+    return [...verifications].sort((a: any, b: any) => {
+      const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
+      const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+      return dateB - dateA;
+    });
+  }, [verifications]);
+
   if (loading) {
     return (
       <div className="py-12 text-center text-muted-foreground flex items-center justify-center gap-2">
@@ -47,7 +57,7 @@ export function SHOVerificationTab({
 
   return (
     <div className="space-y-4">
-      {verifications.length === 0 ? (
+      {sortedVerifications.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground bg-slate-50/80 rounded-xl border border-dashed border-slate-200">
           <CheckCircle className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
           <p className="font-semibold text-slate-800 text-base">All verifications are up to date!</p>
@@ -70,7 +80,7 @@ export function SHOVerificationTab({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {verifications.map((req: any) => {
+              {sortedVerifications.map((req: any) => {
                 const sc = req.SeniorCitizen || req.seniorCitizen;
                 const entityLabel = req.entityType === 'HouseholdHelp'
                   ? 'Servant / Maid'
@@ -79,6 +89,16 @@ export function SHOVerificationTab({
                   : 'Senior Citizen Registration';
 
                 const isAssigned = req.status === 'IN_PROGRESS' || !!req.assignedTo;
+
+                // Priority resolution:
+                // If citizen assessment is not yet conducted, priority should be Normal unless explicitly Urgent.
+                // If assessment has been done, display assessed vulnerability level / priority.
+                const hasAssessment = !!sc && (sc.lastAssessmentDate != null || sc.vulnerabilityScore != null);
+                const displayPriority = req.priority === 'Urgent'
+                  ? 'Urgent'
+                  : (req.entityType === 'SeniorCitizen' && !hasAssessment
+                      ? 'Normal'
+                      : (sc?.vulnerabilityLevel || req.priority || 'Normal'));
 
                 return (
                   <TableRow key={req.id} className="hover:bg-slate-50/70 transition-colors">
@@ -102,13 +122,17 @@ export function SHOVerificationTab({
                     <TableCell>
                       <Badge
                         variant={
-                          req.priority === 'Urgent' || req.priority === 'High'
+                          displayPriority === 'Urgent' || displayPriority === 'High'
                             ? 'destructive'
+                            : displayPriority === 'Medium'
+                            ? 'outline'
                             : 'secondary'
                         }
-                        className="text-[11px] font-bold"
+                        className={`text-[11px] font-bold ${
+                          displayPriority === 'Medium' ? 'bg-amber-50 text-amber-800 border-amber-300' : ''
+                        }`}
                       >
-                        {req.priority || 'Normal'}
+                        {displayPriority}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -118,7 +142,7 @@ export function SHOVerificationTab({
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200 text-[11px] font-semibold">
-                          Pending Assignment
+                          Pending Verification
                         </Badge>
                       )}
                     </TableCell>
