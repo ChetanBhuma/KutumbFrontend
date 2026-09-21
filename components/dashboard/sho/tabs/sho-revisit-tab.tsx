@@ -59,7 +59,10 @@ export function SHORevisitTab({
       beatId: sc?.beatId || sc?.Beat?.id || req.beatId,
       defaultDate: req.preferredDate || req.requestedDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       visitType: req.type === 'CITIZEN_REQUEST' ? (req.visitType || 'Routine') : 'Follow-up',
-      notes: req.notes || req.dueReason
+      notes: req.notes || req.dueReason,
+      age: sc?.age ?? req.age,
+      gender: sc?.gender ?? req.gender,
+      dateOfBirth: sc?.dateOfBirth ?? req.dateOfBirth
     });
   };
 

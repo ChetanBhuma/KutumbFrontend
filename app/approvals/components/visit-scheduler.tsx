@@ -44,6 +44,7 @@ interface VisitSchedulerProps {
     beatId?: string
     policeStationName?: string
     citizenName?: string
+    age?: number | string
     onScheduled: () => void
 }
 
@@ -91,6 +92,7 @@ export function VisitScheduler({
     beatId,
     policeStationName,
     citizenName,
+    age,
     onScheduled
 }: VisitSchedulerProps) {
     const { toast } = useToast()
@@ -270,12 +272,17 @@ export function VisitScheduler({
                                     <User className="h-4 w-4 text-indigo-300 shrink-0" />
                                     <span className="font-bold text-white truncate text-sm">{citizenName || "Applicant"}</span>
                                 </div>
-                                {policeStationName && (
+                                {age ? (
+                                    <div className="flex items-center gap-1.5 shrink-0 text-white bg-indigo-800 border border-indigo-600 px-2.5 py-1 rounded-md text-xs font-semibold shadow-xs">
+                                        <CalendarIcon className="h-3.5 w-3.5 text-indigo-300" />
+                                        <span>Age: {age} yrs</span>
+                                    </div>
+                                ) : policeStationName ? (
                                     <div className="flex items-center gap-1.5 shrink-0 text-white bg-indigo-800 border border-indigo-600 px-2.5 py-1 rounded-md text-xs font-semibold shadow-xs">
                                         <Building2 className="h-3.5 w-3.5 text-indigo-300" />
                                         <span>PS: {policeStationName}</span>
                                     </div>
-                                )}
+                                ) : null}
                             </div>
                         )}
                     </div>

@@ -128,9 +128,15 @@ const navigationItems: NavItem[] = [
         permission: { resource: "officers", action: "read" },
       },
       {
-        title: "SOS Alerts",
+        title: "Active SOS",
         icon: Siren,
         href: "/sos",
+        permission: { resource: "sos", action: "read" },
+      },
+      {
+        title: "SOS Incident Logs",
+        icon: FileText,
+        href: "/operations/sos-logs",
         permission: { resource: "sos", action: "read" },
       },
       {

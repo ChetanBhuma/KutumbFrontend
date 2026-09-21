@@ -828,6 +828,27 @@ class ApiClient {
         return this.get<any>('/sos/active', { params });
     }
 
+    async getSOSLogs(params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        startDate?: string;
+        endDate?: string;
+        policeStationId?: string;
+        beatId?: string;
+    }) {
+        return this.get<any>('/sos', { params });
+    }
+
+    async getSOSAlertDetails(id: string) {
+        return this.get<any>(`/sos/${id}`);
+    }
+
+    async getSOSStats() {
+        return this.get<any>('/sos/statistics');
+    }
+
     async updateSOSStatus(id: string, status: string, notes?: string) {
         return this.patch<any>(`/sos/${id}/status`, { status, notes });
     }

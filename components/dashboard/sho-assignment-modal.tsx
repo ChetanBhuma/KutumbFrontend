@@ -48,6 +48,9 @@ export interface AssignModalItem {
     defaultDate?: string;
     visitType?: string;
     notes?: string;
+    age?: number | string;
+    gender?: string;
+    dateOfBirth?: string | Date;
 }
 
 interface Officer {
@@ -294,25 +297,31 @@ export function SHOAssignmentModal({ item, open, onOpenChange, onSuccess }: SHOA
                     </SheetTitle>
 
                     {/* Solid Citizen Context Card */}
-                    {item && (
-                        <div className="mt-4 p-3 rounded-lg bg-indigo-900 border border-indigo-700 flex items-center justify-between gap-2 text-xs shadow-inner">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <User className="h-4 w-4 text-indigo-300 shrink-0" />
-                                <div className="min-w-0">
-                                    <span className="font-bold text-white truncate text-sm block">{item.citizenName || "Applicant"}</span>
-                                    {item.mobileNumber && (
-                                        <span className="text-[11px] text-indigo-200 font-mono">{item.mobileNumber}</span>
-                                    )}
+                    {item && (() => {
+                        const calculatedAge = (item.age !== undefined && item.age !== null && item.age !== '')
+                            ? item.age
+                            : item.dateOfBirth
+                            ? Math.floor((Date.now() - new Date(item.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+                            : null;
+
+                        return (
+                            <div className="mt-4 p-3 rounded-lg bg-indigo-900 border border-indigo-700 flex items-center justify-between gap-2 text-xs shadow-inner">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <User className="h-4 w-4 text-indigo-300 shrink-0" />
+                                    <div className="min-w-0">
+                                        <span className="font-bold text-white truncate text-sm block">{item.citizenName || "Applicant"}</span>
+                                        {item.mobileNumber && (
+                                            <span className="text-[11px] text-indigo-200 font-mono">{item.mobileNumber}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0 text-white bg-indigo-800 border border-indigo-600 px-2.5 py-1 rounded-md text-xs font-semibold shadow-xs">
+                                    <CalendarIcon className="h-3.5 w-3.5 text-indigo-300" />
+                                    <span>Age: {calculatedAge ? `${calculatedAge} yrs` : 'N/A'}</span>
                                 </div>
                             </div>
-                            {item.policeStationName && (
-                                <div className="flex items-center gap-1.5 shrink-0 text-white bg-indigo-800 border border-indigo-600 px-2.5 py-1 rounded-md text-xs font-semibold shadow-xs">
-                                    <Building2 className="h-3.5 w-3.5 text-indigo-300" />
-                                    <span>PS: {item.policeStationName}</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        );
+                    })()}
                 </div>
 
                 {/* Form Body with Solid Backgrounds */}

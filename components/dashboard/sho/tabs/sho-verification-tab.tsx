@@ -32,7 +32,10 @@ export function SHOVerificationTab({
       policeStationName: sc?.PoliceStation?.name || sc?.policeStationName,
       beatId: sc?.beatId || sc?.Beat?.id || req.beatId,
       defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      notes: req.remarks
+      notes: req.remarks,
+      age: sc?.age ?? req.age,
+      gender: sc?.gender ?? req.gender,
+      dateOfBirth: sc?.dateOfBirth ?? req.dateOfBirth
     });
   };
 

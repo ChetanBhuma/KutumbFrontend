@@ -91,7 +91,13 @@ export default function ApprovalsPage() {
     const { data: statsData } = useApiQuery(fetchStats, { refetchOnMount: true });
 
     const handleFilterChange = (newFilters: any) => {
-        setFilters(prev => ({ ...prev, ...newFilters }));
+        setFilters(prev => ({
+            ...prev,
+            districtId: undefined,
+            vulnerabilityLevel: undefined,
+            search: '',
+            ...newFilters
+        }));
     };
 
     const { registrations, stats } = useMemo(() => {
@@ -293,6 +299,33 @@ export default function ApprovalsPage() {
 
                 {/* Table */}
                 <Card>
+                    <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                    {filters.status === 'pending' || filters.status === 'PENDING_REVIEW'
+                                        ? 'New Applications Awaiting Review'
+                                        : filters.status === 'approved'
+                                            ? 'Approved Registrations'
+                                            : filters.status === 'rejected'
+                                                ? 'Rejected Applications'
+                                                : 'All Applications'}
+                                </CardTitle>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {filters.status === 'pending' || filters.status === 'PENDING_REVIEW'
+                                        ? 'Only new submissions awaiting physical verification are displayed here. Verified records are moved to Approved.'
+                                        : filters.status === 'approved'
+                                            ? 'Citizens whose physical verification visit and assessment have been completed and approved.'
+                                            : filters.status === 'rejected'
+                                                ? 'Registrations rejected during review or verification.'
+                                                : 'Complete list of senior citizen registration applications.'}
+                                </p>
+                            </div>
+                            <Badge variant="outline" className="text-xs font-semibold px-2.5 py-1">
+                                {registrations.length} {registrations.length === 1 ? 'Record' : 'Records'}
+                            </Badge>
+                        </div>
+                    </CardHeader>
                     {loading ? (
                         <CardContent className="text-center py-12">
                             <Loader2 className="h-12 w-12 animate-spin mx-auto text-muted-foreground" />

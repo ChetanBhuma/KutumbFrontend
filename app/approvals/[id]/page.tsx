@@ -143,6 +143,7 @@ export default function ApprovalDetailPage() {
                             beatId={registration.citizen?.beatId || registration.citizen?.Beat?.id || registration.citizen?.beat?.id}
                             policeStationName={registration.citizen?.PoliceStation?.name || registration.citizen?.policeStation?.name || registration.citizen?.policeStationName}
                             citizenName={registration.citizen?.fullName || registration.fullName}
+                            age={registration.citizen?.age || registration.age}
                             onScheduled={fetchData}
                         />
                     </div>

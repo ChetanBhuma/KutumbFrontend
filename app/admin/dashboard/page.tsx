@@ -7,7 +7,6 @@ import { useApiQuery } from "@/hooks/use-api-query"
 import apiClient from "@/lib/api-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SHOAssignmentModal, AssignModalItem } from "@/components/dashboard/sho-assignment-modal"
@@ -34,16 +33,16 @@ function DashboardContent() {
 
   // 1. Fetch real dashboard stats from API
   const fetchStats = useCallback(() => {
-    const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+    const psId = user?.policeStationId || user?.officerProfile?.policeStationId || user?.stationId;
     return apiClient.getDashboardStats(psId ? { policeStationId: psId } : undefined);
-  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId, user?.stationId])
   const { data: statsData, loading, error, refetch: refetchStats } = useApiQuery(fetchStats, { refetchOnMount: true })
   const stats = statsData?.data || statsData
 
   // 2. Fetch pending verification requests (for SHO assignment)
   const fetchVerifications = useCallback(async () => {
     try {
-      const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+      const psId = user?.policeStationId || user?.officerProfile?.policeStationId || user?.stationId;
       const res: any = await apiClient.getVerificationRequests({
         status: 'Pending',
         ...(psId ? { policeStationId: psId } : {})
@@ -55,13 +54,13 @@ function DashboardContent() {
     } catch {
       return { data: [] }
     }
-  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId, user?.stationId])
   const { data: verificationsData, loading: loadingVerifications, refetch: refetchVerifications } = useApiQuery(fetchVerifications, { refetchOnMount: true })
 
   // 3. Fetch pending re-visit & visit requests (for SHO assignment)
   const fetchVisitRequests = useCallback(async () => {
     try {
-      const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+      const psId = user?.policeStationId || user?.officerProfile?.policeStationId || user?.stationId;
       const res: any = await apiClient.getRevisitsDue({
         ...(psId ? { policeStationId: psId } : {})
       })
@@ -72,13 +71,13 @@ function DashboardContent() {
     } catch {
       return { data: [] }
     }
-  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId, user?.stationId])
   const { data: visitRequestsData, loading: loadingVisitRequests, refetch: refetchVisitRequests } = useApiQuery(fetchVisitRequests, { refetchOnMount: true })
 
   // 4. Fetch SOS Alerts (for SHO police station)
   const fetchSOS = useCallback(async () => {
     try {
-      const psId = user?.policeStationId || user?.officerProfile?.policeStationId;
+      const psId = user?.policeStationId || user?.officerProfile?.policeStationId || user?.stationId;
       const res: any = await apiClient.get('/sos', {
         params: {
           limit: 100,
@@ -92,7 +91,7 @@ function DashboardContent() {
     } catch {
       return { data: [] }
     }
-  }, [user?.policeStationId, user?.officerProfile?.policeStationId])
+  }, [user?.policeStationId, user?.officerProfile?.policeStationId, user?.stationId])
   const { data: sosData, loading: loadingSOS, refetch: refetchSOS } = useApiQuery(fetchSOS, { refetchOnMount: true })
 
   // Auto-polling for SOS alerts & counters (every 15 seconds)
@@ -164,7 +163,9 @@ function DashboardContent() {
   const pendingVisitRequests: any[] = Array.isArray(visitRequestsData) ? visitRequestsData : (visitRequestsData as any)?.data || []
   const activeSOSList: any[] = Array.isArray(sosData) ? sosData : (sosData as any)?.data || []
 
-  const activeSOSCount = stats?.sos?.active ?? activeSOSList.length
+  // Active / ongoing alerts from the station list (Active or Responded)
+  const ongoingSOSInList = activeSOSList.filter((a: any) => a.status === 'Active' || a.status === 'Responded').length
+  const activeSOSCount = typeof stats?.sos?.active === 'number' ? stats.sos.active : ongoingSOSInList
   const unassignedBeats = stats?.beats?.unassigned ?? 0
   const overdueVisits = stats?.citizens?.overdueHighRiskVisits ?? 0
 
@@ -195,34 +196,15 @@ function DashboardContent() {
 
       {/* 3. Central Operational Action Workbench (Multi-Tab Container) */}
       <Card id="operations-workbench" className="border border-slate-200 shadow-sm bg-white overflow-hidden scroll-mt-6">
-        <CardHeader className="py-2.5 px-4 sm:px-6 border-b border-slate-100 bg-slate-50/50">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="h-4 sm:h-5 w-4 sm:w-5 text-primary" />
-                Daily Police Station Work & Tasks
-              </CardTitle>
-              <CardDescription className="text-xs mt-0.5">
-                Manage senior citizen verifications, regular follow-up visits, emergency SOS calls, and beat officer duty.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {pendingVerifications.length > 0 && (
-                <Badge variant="outline" className="px-2 py-0.5 text-xs bg-blue-50 text-blue-900 border-blue-200 font-bold">
-                  {pendingVerifications.length} Verifications Pending
-                </Badge>
-              )}
-              {pendingVisitRequests.length > 0 && (
-                <Badge variant="outline" className="px-2 py-0.5 text-xs bg-amber-50 text-amber-900 border-amber-200 font-bold">
-                  {pendingVisitRequests.length} Follow-up Visits Due
-                </Badge>
-              )}
-              {activeSOSCount > 0 && (
-                <Badge variant="destructive" className="px-2 py-0.5 text-xs font-bold animate-pulse">
-                  {activeSOSCount} Active SOS Alert{activeSOSCount > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
+        <CardHeader className="py-2 px-4 sm:px-6 border-b border-slate-100 bg-slate-50/50">
+          <div>
+            <CardTitle className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="h-4 sm:h-5 w-4 sm:w-5 text-primary" />
+              Daily Police Station Work & Tasks
+            </CardTitle>
+            <CardDescription className="text-xs mt-0.5">
+              Manage senior citizen verifications, regular follow-up visits, emergency SOS calls, and beat officer duty.
+            </CardDescription>
           </div>
         </CardHeader>
 
