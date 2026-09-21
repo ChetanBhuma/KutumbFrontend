@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, formatDistanceToNow } from 'date-fns';
-import { usePaginatedQuery } from '@/hooks/use-api-query';
+import { usePaginatedQuery, useApiQuery } from '@/hooks/use-api-query';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import apiClient from '@/lib/api-client';
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -150,6 +150,22 @@ export default function VisitsPage() {
       return apiClient.getVisits(params);
     }, [filters, dateFilter])
   );
+
+  const fetchPendingVerifications = useCallback(async () => {
+    try {
+      const res: any = await apiClient.getVerificationRequests({ status: 'Pending' });
+      if (res.success) {
+        const items = res.data?.requests || res.data?.items || (Array.isArray(res.data) ? res.data : []);
+        return { data: items };
+      }
+      return { data: [] };
+    } catch {
+      return { data: [] };
+    }
+  }, []);
+
+  const { data: pendingVerifications } = useApiQuery(fetchPendingVerifications, { refetchOnMount: true });
+  const pendingVerificationsCount = (pendingVerifications as any[])?.length || 0;
 
   const executeStartVisit = async (visit: VisitRecord) => {
     try {
@@ -347,6 +363,40 @@ export default function VisitsPage() {
               </Button>
             </div>
           </div>
+
+          {/* Pending Verifications Notice */}
+          {pendingVerificationsCount > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 shadow-2xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+                <div className="text-xs sm:text-sm">
+                  <span className="font-semibold text-amber-950">
+                    {pendingVerificationsCount} New Citizen Registration{pendingVerificationsCount > 1 ? 's' : ''} Awaiting Physical Verification
+                  </span>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Newly registered senior citizens require a physical verification visit before routine visits can take place. They will appear in this visits table as soon as a verification visit is scheduled.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs border-amber-300 text-amber-900 hover:bg-amber-100 bg-white"
+                  onClick={() => router.push('/approvals')}
+                >
+                  View Approvals
+                </Button>
+                <Button
+                  size="sm"
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  onClick={() => router.push('/visits/schedule')}
+                >
+                  Schedule Verification
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Search & Filters Accordion (Closed by default) */}
           <Accordion type="single" collapsible className="w-full">

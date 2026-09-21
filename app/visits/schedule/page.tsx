@@ -24,6 +24,9 @@ interface CitizenOption {
   id: string;
   fullName: string;
   mobileNumber: string;
+  idVerificationStatus?: string;
+  status?: string;
+  Visit?: Array<{ id: string; visitType: string; status: string }>;
 }
 
 interface OfficerOption {
@@ -141,6 +144,39 @@ export default function ScheduleVisitPage() {
   const officers = officersData || [];
   const visits = visitsData?.items || [];
 
+  const isVerificationDone = useMemo(() => {
+    if (!formData.seniorCitizenId) return null;
+
+    const selected = citizens.find(c => c.id === formData.seniorCitizenId);
+    if (!selected) return null;
+
+    // Check status flags on citizen
+    const idStatus = (selected.idVerificationStatus || '').toLowerCase();
+    const isVerifiedStatus = idStatus === 'verified' || idStatus === 'fieldverified';
+
+    // Check completed verification visit in citizen's visits (from citizen relation or fetched visits)
+    const hasCompletedVerificationVisit =
+      (selected.Visit || []).some((v: any) => v.visitType?.toLowerCase() === 'verification' && ['completed', 'COMPLETED'].includes(v.status)) ||
+      visits.some((v: any) => v.visitType?.toLowerCase() === 'verification' && ['completed', 'COMPLETED'].includes(v.status));
+
+    return isVerifiedStatus || hasCompletedVerificationVisit;
+  }, [formData.seniorCitizenId, citizens, visits]);
+
+  // Enforce correct visitType when citizen is selected or changed (for new visits)
+  useEffect(() => {
+    if (visitIdParam) return; // Do not override when editing an existing visit
+
+    if (isVerificationDone === false) {
+      if (formData.visitType !== 'Verification') {
+        setFormData(prev => ({ ...prev, visitType: 'Verification' }));
+      }
+    } else if (isVerificationDone === true) {
+      if (formData.visitType === 'Verification') {
+        setFormData(prev => ({ ...prev, visitType: 'Routine' }));
+      }
+    }
+  }, [isVerificationDone, visitIdParam, formData.visitType]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!formData.seniorCitizenId || !formData.officerId || !formData.scheduledDate) {
@@ -179,7 +215,7 @@ export default function ScheduleVisitPage() {
         ...prev,
         scheduledDate: '',
         notes: '',
-        visitType: 'Routine'
+        visitType: isVerificationDone === false ? 'Verification' : 'Routine'
       }));
     } catch (err: any) {
       console.error('Failed to schedule visit', err);
@@ -282,11 +318,25 @@ export default function ScheduleVisitPage() {
                             <SelectValue placeholder="Select citizen" />
                           </SelectTrigger>
                           <SelectContent>
-                            {citizens.map((citizen) => (
-                              <SelectItem key={citizen.id} value={citizen.id}>
-                                {citizen.fullName} · {citizen.mobileNumber}
-                              </SelectItem>
-                            ))}
+                            {citizens.map((citizen) => {
+                              const isPending = citizen.idVerificationStatus === 'Pending' || citizen.idVerificationStatus === 'PENDING';
+                              return (
+                                <SelectItem key={citizen.id} value={citizen.id}>
+                                  <div className="flex items-center justify-between gap-3 w-full">
+                                    <span>{citizen.fullName} · {citizen.mobileNumber}</span>
+                                    {isPending ? (
+                                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded">
+                                        Needs Verification
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded">
+                                        Verified
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>
@@ -320,7 +370,19 @@ export default function ScheduleVisitPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Visit Type</Label>
+                        <div className="flex items-center justify-between">
+                          <Label>Visit Type</Label>
+                          {isVerificationDone === false && !visitIdParam && (
+                            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded">
+                              Verification Only
+                            </span>
+                          )}
+                          {isVerificationDone === true && !visitIdParam && (
+                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">
+                              Verified Citizen
+                            </span>
+                          )}
+                        </div>
                         <Select
                           value={formData.visitType}
                           onValueChange={(val) => setFormData((prev) => ({ ...prev, visitType: val as any }))}
@@ -329,12 +391,47 @@ export default function ScheduleVisitPage() {
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Routine">Routine</SelectItem>
-                            <SelectItem value="Follow-up">Follow-up</SelectItem>
-                            <SelectItem value="Verification">Verification</SelectItem>
-                            <SelectItem value="Emergency">Emergency</SelectItem>
+                            {visitIdParam ? (
+                              <>
+                                <SelectItem value="Routine">Routine</SelectItem>
+                                <SelectItem value="Follow-up">Follow-up</SelectItem>
+                                <SelectItem value="Verification">Verification</SelectItem>
+                                <SelectItem value="Emergency">Emergency</SelectItem>
+                              </>
+                            ) : isVerificationDone === false ? (
+                              // Verification visit NOT done: show ONLY Verification
+                              <SelectItem value="Verification">Verification</SelectItem>
+                            ) : isVerificationDone === true ? (
+                              // Verification visit IS done: do NOT show Verification
+                              <>
+                                <SelectItem value="Routine">Routine</SelectItem>
+                                <SelectItem value="Follow-up">Follow-up</SelectItem>
+                                <SelectItem value="Emergency">Emergency</SelectItem>
+                              </>
+                            ) : (
+                              // No citizen selected yet
+                              <>
+                                <SelectItem value="Routine">Routine</SelectItem>
+                                <SelectItem value="Follow-up">Follow-up</SelectItem>
+                                <SelectItem value="Verification">Verification</SelectItem>
+                                <SelectItem value="Emergency">Emergency</SelectItem>
+                              </>
+                            )}
                           </SelectContent>
                         </Select>
+
+                        {!visitIdParam && isVerificationDone === false && (
+                          <div className="flex items-start gap-1.5 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs leading-relaxed">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                            <span>This citizen has not completed their physical verification visit yet. Only a <strong>Verification</strong> visit can be scheduled.</span>
+                          </div>
+                        )}
+                        {!visitIdParam && isVerificationDone === true && (
+                          <div className="flex items-start gap-1.5 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs leading-relaxed">
+                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                            <span>Citizen is verified. You can schedule <strong>Routine</strong>, <strong>Follow-up</strong>, or <strong>Emergency</strong> visits.</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-2">

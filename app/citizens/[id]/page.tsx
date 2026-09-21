@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import { useApiQuery } from '@/hooks/use-api-query';
@@ -156,7 +156,85 @@ export default function CitizenDetailPage() {
         { enabled: !!params.id, refetchOnMount: true }
     );
 
-    const visits = visitsResponse?.visits || [];
+    const visits = visitsResponse?.items || visitsResponse?.visits || [];
+
+    // Build unified timeline including physical visits and pending verification requests
+    const timelineItems = useMemo(() => {
+        const rawVisits: any[] = visits.length > 0 ? visits : (citizen?.Visit || []);
+        const items: any[] = [];
+        const seenVisitIds = new Set<string>();
+
+        // 1. Add all existing physical visits
+        rawVisits.forEach((v: any) => {
+            if (v?.id && !seenVisitIds.has(v.id)) {
+                seenVisitIds.add(v.id);
+                items.push({
+                    id: v.id,
+                    visitType: v.visitType || 'General',
+                    status: v.status || 'Scheduled',
+                    scheduledDate: v.scheduledDate || v.createdAt,
+                    completedDate: v.completedDate,
+                    officer: v.officer,
+                    notes: v.notes,
+                    priority: v.priority,
+                    isPendingVerification: false,
+                    raw: v
+                });
+            }
+        });
+
+        // 2. Check if a physical verification visit is already scheduled or completed
+        const hasExistingVerificationVisit = items.some(
+            (item: any) => item.visitType?.toLowerCase() === 'verification' &&
+                ['completed', 'in progress', 'scheduled'].includes(String(item.status).toLowerCase())
+        );
+
+        // 3. Check for pending verification requests from citizen model
+        const verificationRequests: any[] = citizen?.VerificationRequest || [];
+        const pendingVerificationRequests = verificationRequests.filter(
+            (vr: any) => ['pending', 'in_progress', 'in progress'].includes(String(vr.status).toLowerCase())
+        );
+
+        if (pendingVerificationRequests.length > 0) {
+            pendingVerificationRequests.forEach((vr: any) => {
+                if (!hasExistingVerificationVisit || String(vr.status).toUpperCase() === 'PENDING') {
+                    items.push({
+                        id: `vr-${vr.id}`,
+                        visitType: 'Verification',
+                        status: String(vr.status).toUpperCase() === 'PENDING' ? 'Pending' : (vr.status || 'Pending'),
+                        scheduledDate: vr.createdAt,
+                        officer: vr.assignedTo ? { name: vr.assignedTo } : null,
+                        notes: vr.remarks || 'Initial Registration Verification - Awaiting Beat Officer Assignment by SHO',
+                        priority: vr.priority || 'Normal',
+                        isPendingVerification: true,
+                        raw: vr
+                    });
+                }
+            });
+        } else if (
+            (citizen?.idVerificationStatus === 'Pending' || citizen?.status === 'Pending') &&
+            !hasExistingVerificationVisit
+        ) {
+            items.push({
+                id: 'pending-registration-verification',
+                visitType: 'Verification',
+                status: 'Pending',
+                scheduledDate: citizen?.registrationDate || citizen?.applicationReceivedOn || citizen?.createdAt || new Date().toISOString(),
+                officer: null,
+                notes: 'Registration Physical Verification Visit - Awaiting Beat Officer Assignment by SHO',
+                priority: citizen?.vulnerabilityLevel === 'High' ? 'High' : 'Normal',
+                isPendingVerification: true,
+                raw: null
+            });
+        }
+
+        // Sort descending by date
+        return items.sort((a, b) => {
+            const timeA = new Date(a.scheduledDate || 0).getTime();
+            const timeB = new Date(b.scheduledDate || 0).getTime();
+            return timeB - timeA;
+        });
+    }, [visits, citizen]);
 
     const handleIssueCard = async () => {
         try {
@@ -211,7 +289,8 @@ export default function CitizenDetailPage() {
     }));
 
     const primaryContact = emergencyContacts.find((c: any) => c.isPrimary) || emergencyContacts[0];
-    const verificationVisit = citizen.Visit?.find((v: any) => v.visitType === 'Verification' || v.visitType === 'verification');
+    const verificationVisit = (visits.length > 0 ? visits : (citizen.Visit || [])).find((v: any) => v.visitType === 'Verification' || v.visitType === 'verification');
+    const pendingVerification = (citizen.VerificationRequest || []).find((vr: any) => ['pending', 'in_progress'].includes(String(vr.status).toLowerCase()));
 
     return (
         <ProtectedRoute>
@@ -571,7 +650,7 @@ export default function CitizenDetailPage() {
                                                     </div>
                                                     <div className="text-xs text-muted-foreground mt-2 flex justify-between font-medium">
                                                         <span>Last: {citizen.lastAssessmentDate ? format(new Date(citizen.lastAssessmentDate), 'MMM d, yyyy') : 'Not yet verified'}</span>
-                                                        <span>By: {verificationVisit?.officer?.name || 'Pending assignment'}</span>
+                                                        <span>By: {verificationVisit?.officer?.name || (pendingVerification ? 'Pending assignment' : 'Pending assignment')}</span>
                                                     </div>
                                                 </div>
 
@@ -599,7 +678,7 @@ export default function CitizenDetailPage() {
                                                 <div>
                                                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Official Notes</p>
                                                     <div className="bg-muted/30 p-3 rounded-xl border text-sm text-slate-700 dark:text-slate-300 min-h-[55px] leading-relaxed italic">
-                                                        {citizen.officialRemarks || verificationVisit?.notes || 'No official notes recorded.'}
+                                                        {citizen.officialRemarks || verificationVisit?.notes || pendingVerification?.remarks || 'No official notes recorded.'}
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -612,30 +691,39 @@ export default function CitizenDetailPage() {
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent className="p-0 flex-1">
-                                                {(visits.length > 0 || (citizen.Visit && citizen.Visit.length > 0)) ? (
+                                                {timelineItems.length > 0 ? (
                                                     <div className="divide-y">
-                                                        {(visits.length > 0 ? visits : (citizen.Visit || [])).slice(0, 3).map((visit: any, i: number) => (
-                                                            <div key={visit.id} className="p-3 hover:bg-muted/10 transition-colors flex gap-3">
-                                                                <div className="flex flex-col items-center gap-1 min-w-[3rem] pt-1">
-                                                                    <div className="text-[10px] font-bold uppercase text-muted-foreground">{format(new Date(visit.scheduledDate), 'MMM')}</div>
-                                                                    <div className="text-xl font-bold leading-none">{format(new Date(visit.scheduledDate), 'd')}</div>
-                                                                    <div className="text-[10px] text-muted-foreground">{format(new Date(visit.scheduledDate), 'yyyy')}</div>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex justify-between items-start mb-0.5">
-                                                                        <h4 className="font-semibold text-sm truncate pr-2">{visit.visitType} Visit</h4>
-                                                                        <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 border ${visit.status === 'Completed' ? 'text-green-600 border-green-200 bg-green-50' :
-                                                                            visit.status === 'Cancelled' ? 'text-red-600 border-red-200 bg-red-50' : 'text-blue-600 border-blue-200 bg-blue-50'
-                                                                            }`}>
-                                                                            {visit.status}
-                                                                        </Badge>
+                                                        {timelineItems.slice(0, 3).map((visit: any) => {
+                                                            const visitDate = visit.scheduledDate ? new Date(visit.scheduledDate) : new Date();
+                                                            const isValidDate = !isNaN(visitDate.getTime());
+                                                            const isCompleted = visit.status === 'Completed' || visit.status === 'COMPLETED';
+                                                            const isCancelled = visit.status === 'Cancelled' || visit.status === 'CANCELLED';
+                                                            const isPending = visit.status === 'Pending' || visit.status === 'PENDING' || visit.isPendingVerification;
+                                                            return (
+                                                                <div key={visit.id} className="p-3 hover:bg-muted/10 transition-colors flex gap-3">
+                                                                    <div className="flex flex-col items-center gap-1 min-w-[3rem] pt-1">
+                                                                        <div className="text-[10px] font-bold uppercase text-muted-foreground">{isValidDate ? format(visitDate, 'MMM') : '---'}</div>
+                                                                        <div className="text-xl font-bold leading-none">{isValidDate ? format(visitDate, 'd') : '--'}</div>
+                                                                        <div className="text-[10px] text-muted-foreground">{isValidDate ? format(visitDate, 'yyyy') : '----'}</div>
                                                                     </div>
-                                                                    <p className="text-xs text-muted-foreground truncate">
-                                                                        Officer: <span className="font-medium text-foreground">{visit.officer?.name || 'Unassigned'}</span>
-                                                                    </p>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex justify-between items-start mb-0.5">
+                                                                            <h4 className="font-semibold text-sm truncate pr-2">{visit.visitType} Visit</h4>
+                                                                            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 border ${isCompleted ? 'text-green-600 border-green-200 bg-green-50' :
+                                                                                isCancelled ? 'text-red-600 border-red-200 bg-red-50' :
+                                                                                isPending ? 'text-amber-600 border-amber-200 bg-amber-50' :
+                                                                                'text-blue-600 border-blue-200 bg-blue-50'
+                                                                                }`}>
+                                                                                {visit.status === 'PENDING' ? 'Pending' : visit.status}
+                                                                            </Badge>
+                                                                        </div>
+                                                                        <p className="text-xs text-muted-foreground truncate">
+                                                                            Officer: <span className="font-medium text-foreground">{visit.officer?.name || (visit.isPendingVerification ? 'Pending Assignment' : 'Unassigned')}</span>
+                                                                        </p>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col items-center justify-center py-10 text-center h-full">
@@ -1048,42 +1136,84 @@ export default function CitizenDetailPage() {
                                                     </CardTitle>
                                                 </CardHeader>
                                                 <CardContent className="pt-6 pb-6">
-                                                    {(visits.length > 0 || (citizen.Visit && citizen.Visit.length > 0)) ? (
+                                                    {timelineItems.length > 0 ? (
                                                         <div className="space-y-6 relative before:absolute before:inset-0 before:ml-6 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border/50 before:to-transparent">
-                                                            {(visits.length > 0 ? visits : (citizen.Visit || [])).map((visit: any) => (
-                                                                <div key={visit.id} className="relative flex items-center gap-4 group">
-                                                                    <div className={`flex items-center justify-center w-12 h-12 rounded-full border-4 border-background shadow-sm shrink-0 z-10 ${visit.status === 'Completed' ? 'bg-green-100 text-green-600' :
-                                                                        visit.status === 'Cancelled' ? 'bg-red-100 text-red-600' :
+                                                            {timelineItems.map((visit: any) => {
+                                                                const isCompleted = visit.status === 'Completed' || visit.status === 'COMPLETED';
+                                                                const isCancelled = visit.status === 'Cancelled' || visit.status === 'CANCELLED';
+                                                                const isPending = visit.status === 'Pending' || visit.status === 'PENDING' || visit.isPendingVerification;
+
+                                                                const dateStr = visit.scheduledDate ? (() => {
+                                                                    try {
+                                                                        const d = new Date(visit.scheduledDate);
+                                                                        return !isNaN(d.getTime()) ? format(d, 'PPPP p') : 'Date Pending';
+                                                                    } catch {
+                                                                        return 'Date Pending';
+                                                                    }
+                                                                })() : 'Date Pending';
+
+                                                                return (
+                                                                    <div key={visit.id} className="relative flex items-center gap-4 group">
+                                                                        <div className={`flex items-center justify-center w-12 h-12 rounded-full border-4 border-background shadow-sm shrink-0 z-10 ${
+                                                                            isCompleted ? 'bg-green-100 text-green-600' :
+                                                                            isCancelled ? 'bg-red-100 text-red-600' :
+                                                                            isPending ? 'bg-amber-100 text-amber-600' :
                                                                             'bg-blue-100 text-blue-600'
                                                                         }`}>
-                                                                        {visit.status === 'Completed' ? <CheckCircle2 className="h-5 w-5" /> :
-                                                                            visit.status === 'Cancelled' ? <XCircle className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
-                                                                    </div>
-                                                                    <div className="flex-1 bg-card p-4 rounded-xl border hover:shadow-md transition-shadow">
-                                                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-                                                                            <div>
-                                                                                <p className="font-bold text-base">{visit.visitType} Visit</p>
-                                                                                <p className="text-xs text-muted-foreground">{format(new Date(visit.scheduledDate), 'PPPP p')}</p>
-                                                                            </div>
-                                                                            <Badge variant="outline" className={`w-fit ${visit.status === 'Completed' ? 'text-green-700 bg-green-50 border-green-200' :
-                                                                                visit.status === 'Cancelled' ? 'text-red-700 bg-red-50 border-red-200' : 'text-blue-700 bg-blue-50 border-blue-200'
-                                                                                }`}>
-                                                                                {visit.status}
-                                                                            </Badge>
+                                                                            {isCompleted ? <CheckCircle2 className="h-5 w-5" /> :
+                                                                                isCancelled ? <XCircle className="h-5 w-5" /> :
+                                                                                <Clock className="h-5 w-5" />}
                                                                         </div>
-                                                                        <div className="text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 pt-3 border-t border-dashed">
-                                                                            <div>
-                                                                                <span className="font-medium text-foreground">Officer:</span> {visit.officer?.name || 'Unassigned'}
-                                                                            </div>
-                                                                            {visit.notes && (
-                                                                                <div className="md:col-span-2 italic">
-                                                                                    "{visit.notes}"
+                                                                        <div className="flex-1 bg-card p-4 rounded-xl border hover:shadow-md transition-shadow">
+                                                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+                                                                                <div>
+                                                                                    <p className="font-bold text-base">{visit.visitType} Visit</p>
+                                                                                    <p className="text-xs text-muted-foreground">{dateStr}</p>
                                                                                 </div>
-                                                                            )}
+                                                                                <Badge variant="outline" className={`w-fit ${
+                                                                                    isCompleted ? 'text-green-700 bg-green-50 border-green-200' :
+                                                                                    isCancelled ? 'text-red-700 bg-red-50 border-red-200' :
+                                                                                    isPending ? 'text-amber-700 bg-amber-50 border-amber-200 font-semibold' :
+                                                                                    'text-blue-700 bg-blue-50 border-blue-200'
+                                                                                }`}>
+                                                                                    {visit.status === 'PENDING' ? 'Pending' : visit.status}
+                                                                                </Badge>
+                                                                            </div>
+                                                                            <div className="text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 pt-3 border-t border-dashed">
+                                                                                <div>
+                                                                                    <span className="font-medium text-foreground">Officer:</span> {visit.officer?.name || (visit.isPendingVerification ? 'Pending Assignment' : 'Unassigned')}
+                                                                                </div>
+                                                                                {visit.priority && (
+                                                                                    <div>
+                                                                                        <span className="font-medium text-foreground">Priority:</span> {visit.priority}
+                                                                                    </div>
+                                                                                )}
+                                                                                {visit.notes && (
+                                                                                    <div className="md:col-span-2 italic">
+                                                                                        "{visit.notes}"
+                                                                                    </div>
+                                                                                )}
+                                                                                {visit.isPendingVerification && (
+                                                                                    <div className="md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2 pt-2 border-t text-xs text-amber-700 dark:text-amber-400 font-medium">
+                                                                                        <span className="flex items-center gap-1.5">
+                                                                                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                                                                            Awaiting Beat Officer assignment by Station House Officer (SHO)
+                                                                                        </span>
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            variant="outline"
+                                                                                            onClick={() => router.push(`/visits/schedule?citizenId=${citizen.id}`)}
+                                                                                            className="h-7 text-xs border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 shrink-0 self-start sm:self-auto"
+                                                                                        >
+                                                                                            <Calendar className="h-3 w-3 mr-1" /> Schedule / Assign
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
+                                                                );
+                                                            })}
                                                         </div>
                                                     ) : (
                                                         <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/10 rounded-xl border-dashed border-2">
@@ -1098,16 +1228,22 @@ export default function CitizenDetailPage() {
                                             <Card className="shadow-sm border border-primary/10 bg-primary/5 rounded-xl">
                                                 <CardContent className="p-6 text-center">
                                                     <h3 className="text-lg font-bold text-primary mb-2">Summary</h3>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 mt-4">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-3 gap-3 mt-4">
                                                         <div className="p-3 bg-background rounded-lg shadow-sm border text-center">
-                                                            <div className="text-2xl font-bold">{visits.length || (citizen.Visit ? citizen.Visit.length : 0)}</div>
-                                                            <div className="text-[8px] text-muted-foreground uppercase font-bold tracking-wider">Total Visits</div>
+                                                            <div className="text-2xl font-bold">{timelineItems.length}</div>
+                                                            <div className="text-[8px] text-muted-foreground uppercase font-bold tracking-wider">Total</div>
                                                         </div>
                                                         <div className="p-3 bg-background rounded-lg shadow-sm border text-center">
                                                             <div className="text-2xl font-bold text-green-600">
-                                                                {(visits || citizen.Visit || []).filter((v: any) => v.status === 'Completed').length}
+                                                                {timelineItems.filter((v: any) => v.status === 'Completed' || v.status === 'COMPLETED').length}
                                                             </div>
                                                             <div className="text-[8px] text-muted-foreground uppercase font-bold tracking-wider">Completed</div>
+                                                        </div>
+                                                        <div className="p-3 bg-background rounded-lg shadow-sm border text-center">
+                                                            <div className="text-2xl font-bold text-amber-600">
+                                                                {timelineItems.filter((v: any) => v.status === 'Pending' || v.status === 'PENDING' || v.isPendingVerification).length}
+                                                            </div>
+                                                            <div className="text-[8px] text-muted-foreground uppercase font-bold tracking-wider">Pending</div>
                                                         </div>
                                                     </div>
                                                 </CardContent>
