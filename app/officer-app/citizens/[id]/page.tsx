@@ -53,33 +53,9 @@ export default function CitizenDetailPage() {
         fetchCitizen();
     }, [id]);
 
-    const viewDocument = async (url: string) => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000${url}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch document');
-            }
-
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
-
-            // Clean up blob URL after a delay
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-        } catch (error) {
-            console.error('Error viewing document:', error);
-            toast({
-                title: "Error",
-                description: "Failed to open document",
-                variant: "destructive"
-            });
-        }
+    const viewDocument = async (url: string, title?: string) => {
+        if (!url) return;
+        apiClient.viewDocument(url, title || 'Citizen Document');
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
@@ -111,7 +87,15 @@ export default function CitizenDetailPage() {
                 <Card className="border-0 shadow-sm overflow-hidden">
                     <div className="h-24 bg-gradient-to-r from-blue-600 to-indigo-700 relative">
                         <div className="absolute -bottom-10 left-4">
-                            <Avatar className="h-20 w-20 border-4 border-white shadow-md">
+                            <Avatar
+                                className={`h-20 w-20 border-4 border-white shadow-md ${citizen.photoUrl ? 'cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all' : ''}`}
+                                onClick={() => {
+                                    if (citizen.photoUrl) {
+                                        viewDocument(citizen.photoUrl, `${citizen.fullName} - Photo`);
+                                    }
+                                }}
+                                title={citizen.photoUrl ? 'Click to preview photo' : undefined}
+                            >
                                 <AvatarImage src={citizen.photoUrl} />
                                 <AvatarFallback className="text-xl font-bold bg-slate-200">{citizen.fullName?.charAt(0)}</AvatarFallback>
                             </Avatar>
@@ -260,13 +244,61 @@ export default function CitizenDetailPage() {
                                 <CardHeader className="pb-2 bg-slate-50/50"><CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2"><Briefcase className="h-4 w-4" /> Household Staff</CardTitle></CardHeader>
                                 <CardContent className="pt-4 space-y-2">
                                     {citizen.HouseholdHelp.map((staff: any, i: number) => (
-                                        <div key={i} className="border p-2 rounded flex justify-between items-start">
-                                            <div>
-                                                <p className="font-medium text-sm">{staff.name} <span className="text-xs text-slate-500">({staff.staffType})</span></p>
-                                                <p className="text-xs">{staff.mobileNumber}</p>
+                                        <div key={i} className="border p-3 rounded-lg bg-white space-y-2 text-xs">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    {staff.photoUrl ? (
+                                                        <img
+                                                            src={staff.photoUrl}
+                                                            alt=""
+                                                            className="w-9 h-11 object-cover rounded border cursor-pointer"
+                                                            onClick={() => viewDocument(staff.photoUrl, `Passport Photo - ${staff.name}`)}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-9 h-11 rounded border border-dashed flex items-center justify-center text-slate-400 bg-slate-50">
+                                                            <User className="h-4 w-4" />
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="font-semibold text-sm text-slate-900">{staff.name}</p>
+                                                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                                            <p className="text-blue-600 font-medium">
+                                                                {staff.domesticHelpType === 'Any Other' && staff.otherStaffType ? staff.otherStaffType : (staff.domesticHelpType || staff.staffType || 'Domestic Help')}
+                                                            </p>
+                                                            <span className="text-[10px] bg-slate-100 text-slate-600 px-1 rounded border">
+                                                                {staff.jobType || staff.employmentType || 'Permanent'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-slate-500 font-mono mt-0.5">Mob: {staff.mobileNumber || '-'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    {staff.signatureUrl && (
+                                                        <Button size="sm" variant="outline" className="h-7 text-xs text-slate-700 border-slate-300 hover:bg-slate-50" onClick={() => viewDocument(staff.signatureUrl, `${staff.name} Thumb Impression / Signature`)}>
+                                                            Thumb / Sign
+                                                        </Button>
+                                                    )}
+                                                    {staff.idProofUrl && (
+                                                        <Button size="sm" variant="outline" className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => viewDocument(staff.idProofUrl, `${staff.name} ID Proof (${staff.idProofType || 'Govt ID'})`)}>
+                                                            View ID
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
-                                            {staff.idProofUrl && (
-                                                <Button size="sm" variant="ghost" className="h-6 text-xs text-blue-600" onClick={() => viewDocument(staff.idProofUrl)}>View ID</Button>
+
+                                            <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-600 pt-1 border-t">
+                                                {staff.fatherName && <div><span className="text-slate-400">Father:</span> {staff.fatherName}</div>}
+                                                {staff.motherName && <div><span className="text-slate-400">Mother:</span> {staff.motherName}</div>}
+                                                {staff.dob && <div><span className="text-slate-400">DOB:</span> {staff.dob.split('T')[0]}</div>}
+                                                {staff.employedSince && <div><span className="text-slate-400">Employed:</span> {staff.employedSince.split('T')[0]}</div>}
+                                            </div>
+
+                                            {(staff.permanentAddress || staff.localAddress || staff.address) && (
+                                                <div className="text-[11px] bg-slate-50 p-1.5 rounded space-y-0.5">
+                                                    {staff.permanentAddress && <div><span className="font-medium text-slate-700">Permanent:</span> {staff.permanentAddress}</div>}
+                                                    {staff.localAddress && <div><span className="font-medium text-slate-700">Local:</span> {staff.localAddress}</div>}
+                                                    {!staff.permanentAddress && !staff.localAddress && staff.address && <div><span className="font-medium text-slate-700">Address:</span> {staff.address}</div>}
+                                                </div>
                                             )}
                                         </div>
                                     ))}
@@ -288,7 +320,7 @@ export default function CitizenDetailPage() {
                                                     <p className="text-xs text-muted-foreground">Verified Document</p>
                                                 </div>
                                             </div>
-                                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => viewDocument(citizen.addressProofUrl)}>
+                                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => viewDocument(citizen.addressProofUrl, 'Address Proof Document')}>
                                                 Preview
                                             </Button>
                                         </div>
@@ -302,7 +334,7 @@ export default function CitizenDetailPage() {
                                                     <p className="text-xs text-muted-foreground">Identity Document</p>
                                                 </div>
                                             </div>
-                                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => viewDocument(citizen.idProofUrl)}>
+                                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => viewDocument(citizen.idProofUrl, 'Identity Proof Document')}>
                                                 Preview
                                             </Button>
                                         </div>

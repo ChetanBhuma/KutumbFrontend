@@ -162,7 +162,15 @@ export default function CitizenProfilePage() {
                         <Card className="overflow-hidden border-none shadow-lg hover-lift bg-gradient-to-b from-card to-muted/20">
                             <div className="h-28 sm:h-32 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
                                 <div className="absolute -bottom-14 sm:-bottom-16 left-1/2 -translate-x-1/2">
-                                    <Avatar className="h-28 w-28 sm:h-32 sm:w-32 border-4 border-card shadow-xl">
+                                    <Avatar
+                                        className="h-28 w-28 sm:h-32 sm:w-32 border-4 border-card shadow-xl cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                                        onClick={() => {
+                                            if (citizen.photoUrl || photoBlobUrl) {
+                                                apiClient.viewDocument(photoBlobUrl || citizen.photoUrl, `${citizen.fullName} - Profile Photo`);
+                                            }
+                                        }}
+                                        title="Click to preview photo"
+                                    >
                                         <AvatarImage src={photoBlobUrl || citizen.photoUrl} className="object-cover" />
                                         <AvatarFallback className="text-2xl sm:text-3xl bg-blue-100 text-blue-600 font-bold">
                                             {getInitials(citizen.fullName)}
@@ -362,7 +370,7 @@ export default function CitizenProfilePage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => apiClient.viewDocument(citizen.addressProofUrl)}
+                                                    onClick={() => apiClient.viewDocument(citizen.addressProofUrl, 'Address Proof Document')}
                                                     className="bg-white hover:bg-green-100 text-green-700 border border-green-200 shadow-sm"
                                                 >
                                                     <Eye className="h-4 w-4 mr-2" /> View
@@ -464,34 +472,105 @@ export default function CitizenProfilePage() {
                                         {citizen.HouseholdHelp?.length > 0 ? (
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 {citizen.HouseholdHelp.map((staff: any, idx: number) => (
-                                                    <div key={idx} className="p-4 rounded-xl border bg-card hover:shadow-md transition-all">
-                                                        <div className="flex items-center gap-3 mb-3">
-                                                            <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">
-                                                                {getInitials(staff.name)}
+                                                    <div key={idx} className="p-4 rounded-xl border bg-card hover:shadow-md transition-all space-y-3">
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                {staff.photoUrl ? (
+                                                                    <div className="relative group h-14 w-12 rounded-lg overflow-hidden border bg-muted shrink-0">
+                                                                        <img src={staff.photoUrl} alt={staff.name} className="w-full h-full object-cover" />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => apiClient.viewDocument(staff.photoUrl, `Passport Photo - ${staff.name}`)}
+                                                                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                                                            title="Preview Passport Photo"
+                                                                        >
+                                                                            <Eye className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold shrink-0">
+                                                                        {getInitials(staff.name)}
+                                                                    </div>
+                                                                )}
+                                                                <div className="min-w-0">
+                                                                    <p className="font-bold text-base truncate">{staff.name}</p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="font-bold">{staff.name}</p>
-                                                                <Badge variant="outline">{staff.staffType}</Badge>
-                                                            </div>
+
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`text-[10px] shrink-0 ${
+                                                                    staff.verificationStatus === 'Verified'
+                                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                                                                }`}
+                                                            >
+                                                                {staff.verificationStatus || 'Pending Verification'}
+                                                            </Badge>
                                                         </div>
-                                                        <div className="space-y-2 text-sm">
-                                                            <div className="flex justify-between"><span className="text-muted-foreground">Mobile:</span> <span className="font-mono">{staff.mobileNumber}</span></div>
-                                                            <div className="flex justify-between"><span className="text-muted-foreground">Verification:</span> <span>{staff.verificationStatus || 'Pending'}</span></div>
-                                                            {staff.address && <div className="mt-2 text-xs text-muted-foreground border-t pt-2">{staff.address}</div>}
-                                                            {staff.idProofUrl && (
-                                                                <div className="mt-2 pt-2 border-t flex justify-end">
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={(e) => { e.preventDefault(); apiClient.viewDocument(staff.idProofUrl); }}
-                                                                        className="h-8 gap-2 text-xs border-primary/20 text-primary hover:bg-primary/5"
-                                                                    >
-                                                                        <FileCheck className="h-3.5 w-3.5" />
-                                                                        View ID {staff.idProofType ? `(${staff.idProofType})` : ''}
-                                                                    </Button>
+
+                                                        <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-2">
+                                                            <div className="flex justify-between"><span className="text-gray-500">Mobile:</span> <span className="font-mono text-gray-900 font-medium">{staff.mobileNumber || '-'}</span></div>
+                                                            {staff.fatherName && <div className="flex justify-between"><span className="text-gray-500">Father's Name:</span> <span className="text-gray-900 font-medium">{staff.fatherName}</span></div>}
+                                                            {staff.motherName && <div className="flex justify-between"><span className="text-gray-500">Mother's Name:</span> <span className="text-gray-900 font-medium">{staff.motherName}</span></div>}
+                                                            {staff.dob && <div className="flex justify-between"><span className="text-gray-500">DOB:</span> <span className="text-gray-900 font-medium">{staff.dob.split('T')[0]}</span></div>}
+                                                            {staff.employedSince && <div className="flex justify-between"><span className="text-gray-500">Employed Since:</span> <span className="text-gray-900 font-medium">{staff.employedSince.split('T')[0]}</span></div>}
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-500">Domestic Help Type:</span> 
+                                                                <span className="text-gray-900 font-medium">
+                                                                    {staff.domesticHelpType === 'Any Other' && staff.otherStaffType ? staff.otherStaffType : (staff.domesticHelpType || staff.staffType || 'Domestic Help')}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-500">Employment Type:</span> 
+                                                                <span className="text-gray-900 font-medium">
+                                                                    {staff.jobType || staff.employmentType || 'Permanent'}
+                                                                </span>
+                                                            </div>
+                                                            {(staff.idProofNumber || staff.voterId || staff.voterIdNumber) && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-500">{staff.idProofType || 'Voter ID'}:</span> 
+                                                                    <span className="font-mono text-gray-900 font-medium">{staff.idProofNumber || staff.voterId || staff.voterIdNumber}</span>
                                                                 </div>
                                                             )}
                                                         </div>
+
+                                                        {(staff.permanentAddress || staff.localAddress || staff.address) && (
+                                                            <div className="text-xs bg-muted/40 p-2.5 rounded-lg space-y-1 border">
+                                                                {staff.permanentAddress && <div><span className="font-medium text-gray-700">Permanent:</span> <span className="text-muted-foreground">{staff.permanentAddress}</span></div>}
+                                                                {staff.localAddress && <div><span className="font-medium text-gray-700">Local:</span> <span className="text-muted-foreground">{staff.localAddress}</span></div>}
+                                                                {!staff.permanentAddress && !staff.localAddress && staff.address && <div><span className="font-medium text-gray-700">Address:</span> <span className="text-muted-foreground">{staff.address}</span></div>}
+                                                            </div>
+                                                        )}
+
+                                                        {(staff.idProofUrl || staff.signatureUrl) && (
+                                                            <div className="pt-2 border-t flex items-center justify-end gap-2">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {staff.signatureUrl && (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={(e) => { e.preventDefault(); apiClient.viewDocument(staff.signatureUrl, `${staff.name || 'Staff'} Thumb Impression / Signature`); }}
+                                                                            className="h-7 gap-1 text-xs border-slate-300 text-slate-700 hover:bg-slate-50"
+                                                                        >
+                                                                            <Eye className="h-3.5 w-3.5" />
+                                                                            Thumb / Signature
+                                                                        </Button>
+                                                                    )}
+                                                                    {staff.idProofUrl && (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={(e) => { e.preventDefault(); apiClient.viewDocument(staff.idProofUrl, `${staff.name || 'Staff'} ID Proof (${staff.idProofType || 'Govt ID'})`); }}
+                                                                            className="h-7 gap-1.5 text-xs border-primary/20 text-primary hover:bg-primary/5"
+                                                                        >
+                                                                            <FileCheck className="h-3.5 w-3.5" />
+                                                                            View ID Proof
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

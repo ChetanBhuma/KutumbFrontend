@@ -210,6 +210,42 @@ export default function ProfileUpdateDialog({ citizen, onUpdate }: ProfileUpdate
         }
     };
 
+    const handleStaffPhotoUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setLoading(true);
+            const res = await apiClient.uploadCitizenDocument(citizen.id, file, 'ProfilePhoto');
+            if (res.success) {
+                updateArrayItem('householdHelp', index, 'photoUrl', res.data.document.fileUrl);
+                toast({ title: "Success", description: "Servant photo uploaded." });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "Photo upload failed", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleStaffSignatureUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setLoading(true);
+            const res = await apiClient.uploadCitizenDocument(citizen.id, file, 'Signature');
+            if (res.success) {
+                updateArrayItem('householdHelp', index, 'signatureUrl', res.data.document.fileUrl);
+                toast({ title: "Success", description: "Thumb impression / Signature uploaded." });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "Upload failed", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // --- GPS Capture Handler ---
     const handleCaptureGPS = () => {
         if (!navigator.geolocation) {
@@ -256,34 +292,10 @@ export default function ProfileUpdateDialog({ citizen, onUpdate }: ProfileUpdate
         );
     };
 
-    // Helper function to view documents with authentication
-    const viewDocument = async (url: string) => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000${url}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch document');
-            }
-
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
-
-            // Clean up blob URL after a delay
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-        } catch (error) {
-            console.error('Error viewing document:', error);
-            toast({
-                title: "Error",
-                description: "Failed to open document",
-                variant: "destructive"
-            });
-        }
+    // Helper function to view documents with authentication in offcanvas
+    const viewDocument = async (url: string, title?: string) => {
+        if (!url) return;
+        apiClient.viewDocument(url, title || 'Document Preview');
     };
 
     const handleSave = async () => {
@@ -684,7 +696,7 @@ export default function ProfileUpdateDialog({ citizen, onUpdate }: ProfileUpdate
                                                 <span className="font-medium">Document Uploaded</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Button type="button" size="sm" variant="outline" onClick={() => viewDocument(formData.addressProofUrl)}>
+                                                <Button type="button" size="sm" variant="outline" onClick={() => viewDocument(formData.addressProofUrl, 'Address Proof Document')}>
                                                     <Eye className="h-3.5 w-3.5 mr-2" /> View
                                                 </Button>
                                                 <Button type="button" size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => updateField('addressProofUrl', '')}>
@@ -916,55 +928,317 @@ export default function ProfileUpdateDialog({ citizen, onUpdate }: ProfileUpdate
                         <TabsContent value="staff" className="space-y-4">
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <Label className="text-base">Household Staff</Label>
-                                    <Button size="sm" type="button" variant="outline" onClick={() => addArrayItem('householdHelp', { name: '', staffType: 'Domestic Help', mobileNumber: '' })}>
-                                        <Plus className="h-4 w-4 mr-2" /> Add Staff
+                                    <div>
+                                        <Label className="text-base font-semibold">Household Staff & Domestic Help</Label>
+                                        <p className="text-xs text-muted-foreground">Manage servant details, photos, and ID documents</p>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => addArrayItem('householdHelp', {
+                                            staffType: 'Domestic Help',
+                                            name: '',
+                                            fatherName: '',
+                                            motherName: '',
+                                            dob: '',
+                                            mobileNumber: '',
+                                            permanentAddress: '',
+                                            localAddress: '',
+                                            idProofType: 'Voter ID',
+                                            idProofNumber: '',
+                                            idProofUrl: '',
+                                            photoUrl: '',
+                                            signatureUrl: '',
+                                            jobType: 'Permanent',
+                                            employedSince: '',
+                                            domesticHelpType: 'Cooking',
+                                            otherStaffType: ''
+                                        })}
+                                    >
+                                        <Plus className="h-4 w-4 mr-1.5" /> Add Staff Member
                                     </Button>
                                 </div>
+
+                                {(!formData.householdHelp || formData.householdHelp.length === 0) && (
+                                    <div className="text-center text-gray-400 py-6 border-2 border-dashed rounded-lg bg-slate-50/50">
+                                        <p className="text-xs text-slate-500">No household staff registered.</p>
+                                    </div>
+                                )}
+
                                 {formData.householdHelp?.map((staff: any, index: number) => (
-                                    <div key={index} className="grid grid-cols-12 gap-2 items-end border p-3 rounded bg-slate-50">
-                                        <div className="col-span-3 space-y-1">
-                                            <Label className="text-xs">Role</Label>
-                                            <Select value={staff.staffType || 'Domestic Help'} onValueChange={v => updateArrayItem('householdHelp', index, 'staffType', v)}>
-                                                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Domestic Help">Domestic Help</SelectItem>
-                                                    <SelectItem value="Driver">Driver</SelectItem>
-                                                    <SelectItem value="Cook">Cook</SelectItem>
-                                                    <SelectItem value="Caretaker">Caretaker</SelectItem>
-                                                    <SelectItem value="Watchman">Watchman</SelectItem>
-                                                    <SelectItem value="Tenant">Tenant</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                    <div key={index} className="border p-4 rounded-xl bg-white space-y-3 shadow-xs">
+                                        <div className="flex items-center justify-between pb-2 border-b">
+                                            <span className="font-semibold text-xs text-slate-700">
+                                                Staff #{index + 1}: {staff.name || 'Unnamed'}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 text-xs"
+                                                onClick={() => removeArrayItem('householdHelp', index)}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
+                                            </Button>
                                         </div>
-                                        <div className="col-span-4 space-y-1">
-                                            <Label className="text-xs">Name</Label>
-                                            <Input value={staff.name} onChange={e => updateArrayItem('householdHelp', index, 'name', e.target.value)} className="h-8" />
-                                        </div>
-                                        <div className="col-span-4 space-y-1">
-                                            <Label className="text-xs">Mobile</Label>
-                                            <Input value={staff.mobileNumber} onChange={e => updateArrayItem('householdHelp', index, 'mobileNumber', e.target.value)} className="h-8" />
-                                        </div>
-                                        <div className="col-span-12 pt-2 flex items-center gap-2">
-                                            {staff.idProofUrl ? (
-                                                <div className="flex items-center gap-2 flex-1">
-                                                    <span className="text-xs text-green-600 font-medium flex items-center gap-1"><Briefcase className="h-3 w-3" /> ID Uploaded</span>
-                                                    <Button type="button" size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => window.open(staff.idProofUrl, '_blank')}>View</Button>
-                                                    <Button type="button" size="sm" variant="ghost" className="h-6 w-6 text-red-500 p-0" onClick={() => updateArrayItem('householdHelp', index, 'idProofUrl', '')}>
-                                                        <X className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
+
+                                        {/* Passport Photo */}
+                                        <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border">
+                                            {staff.photoUrl ? (
+                                                <img
+                                                    src={staff.photoUrl}
+                                                    alt=""
+                                                    className="w-12 h-14 object-cover rounded border cursor-pointer shrink-0"
+                                                    onClick={() => viewDocument(staff.photoUrl, `Passport Photo - ${staff.name}`)}
+                                                />
                                             ) : (
-                                                <div className="flex-1">
-                                                    <Input type="file" id={`staff-proof-${index}`} className="hidden" onChange={(e) => handleStaffProofUpload(index, e)} accept="image/*,.pdf" />
-                                                    <Label htmlFor={`staff-proof-${index}`} className="text-xs flex items-center gap-1 cursor-pointer text-blue-600 hover:underline">
-                                                        <Upload className="h-3 w-3" /> Upload ID Proof
-                                                    </Label>
+                                                <div className="w-12 h-14 rounded border border-dashed flex items-center justify-center text-slate-400 bg-white shrink-0 text-[10px]">
+                                                    No Photo
                                                 </div>
                                             )}
-                                            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-red-500 shrink-0 ml-auto" onClick={() => removeArrayItem('householdHelp', index)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="file"
+                                                    id={`staff-photo-${index}`}
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleStaffPhotoUpload(index, e)}
+                                                />
+                                                <Label
+                                                    htmlFor={`staff-photo-${index}`}
+                                                    className="text-xs border px-2.5 py-1.5 rounded cursor-pointer hover:bg-slate-100 flex items-center gap-1 font-medium"
+                                                >
+                                                    <Upload className="h-3 w-3" /> {staff.photoUrl ? 'Change Photo' : 'Upload Passport Photo'}
+                                                </Label>
+                                                {staff.photoUrl && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-7 text-xs text-blue-600"
+                                                        onClick={() => viewDocument(staff.photoUrl, `Passport Photo - ${staff.name}`)}
+                                                    >
+                                                        Preview
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Name, Father, Mother */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Servant Name *</Label>
+                                                <Input
+                                                    value={staff.name || ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'name', e.target.value)}
+                                                    className="h-8 text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Father's Name</Label>
+                                                <Input
+                                                    value={staff.fatherName || ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'fatherName', e.target.value)}
+                                                    className="h-8 text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Mother's Name</Label>
+                                                <Input
+                                                    value={staff.motherName || ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'motherName', e.target.value)}
+                                                    className="h-8 text-xs"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* DOB, Mobile, Date Employed */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Date of Birth (DOB)</Label>
+                                                <Input
+                                                    type="date"
+                                                    value={staff.dob ? staff.dob.split('T')[0] : ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'dob', e.target.value)}
+                                                    className="h-8 text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Mobile No.</Label>
+                                                <Input
+                                                    type="tel"
+                                                    maxLength={10}
+                                                    value={staff.mobileNumber || ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'mobileNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                    className="h-8 text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Employed Since</Label>
+                                                <Input
+                                                    type="date"
+                                                    value={staff.employedSince ? staff.employedSince.split('T')[0] : ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'employedSince', e.target.value)}
+                                                    className="h-8 text-xs"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Domestic Help Type & Job Type */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-2 bg-slate-50 rounded border">
+                                            <div className="space-y-1">
+                                                <Label className="text-xs font-semibold">Domestic Help Type</Label>
+                                                <Select
+                                                    value={staff.domesticHelpType || 'Cooking'}
+                                                    onValueChange={v => updateArrayItem('householdHelp', index, 'domesticHelpType', v)}
+                                                >
+                                                    <SelectTrigger className="h-8 text-xs bg-white"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Cooking">Cooking</SelectItem>
+                                                        <SelectItem value="Dusting & Utensil Cleaning">Dusting & Utensil Cleaning</SelectItem>
+                                                        <SelectItem value="Outdoor works">Outdoor works</SelectItem>
+                                                        <SelectItem value="Attending guest/visitor">Attending guest/visitor</SelectItem>
+                                                        <SelectItem value="Attending phone calls">Attending phone calls</SelectItem>
+                                                        <SelectItem value="Any Other">Any Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <Label className="text-xs font-semibold">Job Type</Label>
+                                                <Select
+                                                    value={staff.jobType || 'Permanent'}
+                                                    onValueChange={v => {
+                                                        updateArrayItem('householdHelp', index, 'jobType', v);
+                                                        updateArrayItem('householdHelp', index, 'employmentType', v === 'Permanent' ? 'Full-Time' : v);
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="h-8 text-xs bg-white"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Permanent">Permanent</SelectItem>
+                                                        <SelectItem value="Part-Time">Part-Time</SelectItem>
+                                                        <SelectItem value="Temporary">Temporary</SelectItem>
+                                                        <SelectItem value="Daily Wage">Daily Wage</SelectItem>
+                                                        <SelectItem value="Other">Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {staff.domesticHelpType === 'Any Other' && (
+                                                <div className="space-y-1 md:col-span-2">
+                                                    <Label className="text-xs font-semibold">Specify Other Type</Label>
+                                                    <Input
+                                                        value={staff.otherStaffType || ''}
+                                                        onChange={e => updateArrayItem('householdHelp', index, 'otherStaffType', e.target.value)}
+                                                        className="h-8 text-xs bg-white"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Permanent & Local Address */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Permanent Address</Label>
+                                                <Textarea
+                                                    rows={1}
+                                                    value={staff.permanentAddress || ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'permanentAddress', e.target.value)}
+                                                    className="text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Local Address</Label>
+                                                <Textarea
+                                                    rows={1}
+                                                    value={staff.localAddress || ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'localAddress', e.target.value)}
+                                                    className="text-xs"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Govt ID */}
+                                        <div className="p-2 bg-slate-50 rounded border space-y-2">
+                                            <Label className="text-xs font-semibold block">Any Govt Issued ID</Label>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                                                <Select
+                                                    value={staff.idProofType || 'Voter ID'}
+                                                    onValueChange={v => updateArrayItem('householdHelp', index, 'idProofType', v)}
+                                                >
+                                                    <SelectTrigger className="h-8 text-xs bg-white"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Voter ID">Voter ID</SelectItem>
+                                                        <SelectItem value="Driving License">Driving License</SelectItem>
+                                                        <SelectItem value="Passport">Passport</SelectItem>
+                                                        <SelectItem value="PAN Card">PAN Card</SelectItem>
+                                                        <SelectItem value="Other">Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+
+                                                <Input
+                                                    placeholder="e.g. Voter ID / DL / Passport / PAN No."
+                                                    value={staff.idProofNumber || ''}
+                                                    onChange={e => updateArrayItem('householdHelp', index, 'idProofNumber', e.target.value)}
+                                                    className="h-8 text-xs bg-white"
+                                                />
+
+                                                <div>
+                                                    {staff.idProofUrl ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <Button type="button" size="sm" variant="outline" className="h-8 text-xs flex-1 text-blue-600" onClick={() => viewDocument(staff.idProofUrl, `${staff.name} ID Proof`)}>
+                                                                Preview ID
+                                                            </Button>
+                                                            <Button type="button" size="sm" variant="ghost" className="h-8 w-8 text-red-500 p-0" onClick={() => updateArrayItem('householdHelp', index, 'idProofUrl', '')}>
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <Input type="file" id={`staff-proof-${index}`} className="hidden" onChange={(e) => handleStaffProofUpload(index, e)} accept="image/*,.pdf" />
+                                                            <Label htmlFor={`staff-proof-${index}`} className="text-xs border px-2 py-1.5 rounded cursor-pointer hover:bg-slate-100 flex items-center justify-center gap-1 bg-white font-medium">
+                                                                <Upload className="h-3 w-3" /> Upload ID Proof
+                                                            </Label>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Thumb Impression or Signature */}
+                                        <div className="p-2 bg-slate-50 rounded border space-y-1.5">
+                                            <Label className="text-xs font-semibold block">Thumb Impression or Signature</Label>
+                                            <div className="flex items-center gap-2">
+                                                {staff.signatureUrl ? (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div
+                                                            className="h-8 w-12 rounded border bg-white flex items-center justify-center overflow-hidden cursor-pointer shrink-0"
+                                                            onClick={() => viewDocument(staff.signatureUrl, `${staff.name || 'Staff'} Thumb Impression / Signature`)}
+                                                        >
+                                                            <img
+                                                                src={staff.signatureUrl}
+                                                                alt=""
+                                                                className="h-full w-full object-contain p-0.5"
+                                                                onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+                                                            />
+                                                        </div>
+                                                        <Button type="button" size="sm" variant="outline" className="h-7 text-xs text-blue-600" onClick={() => viewDocument(staff.signatureUrl, `${staff.name || 'Staff'} Thumb Impression / Signature`)}>
+                                                            Preview
+                                                        </Button>
+                                                        <Button type="button" size="sm" variant="ghost" className="h-7 w-7 text-red-500 p-0" onClick={() => updateArrayItem('householdHelp', index, 'signatureUrl', '')}>
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <Input type="file" id={`staff-sig-${index}`} className="hidden" onChange={(e) => handleStaffSignatureUpload(index, e)} accept="image/*,.pdf" />
+                                                        <Label htmlFor={`staff-sig-${index}`} className="text-xs border px-2 py-1.5 rounded cursor-pointer hover:bg-slate-100 flex items-center justify-center gap-1 bg-white font-medium">
+                                                            <Upload className="h-3 w-3" /> Upload Thumb Impression or Signature
+                                                        </Label>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

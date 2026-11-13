@@ -7,6 +7,9 @@ import { AccessibilityToolbar } from "@/components/accessibility-toolbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "@/components/ui/toaster";
+import { DocumentPreviewProvider } from "@/contexts/document-preview-context";
+import { DocumentPreviewOffcanvas } from "@/components/ui/document-preview-offcanvas";
+import { GlobalErrorHandler } from "@/components/global-error-handler";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -41,13 +44,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
+        <GlobalErrorHandler />
         <ErrorBoundary>
           <AuthProvider>
             <MasterDataProvider>
               <TooltipProvider>
-                <AccessibilityToolbar />
-                {children}
-                <Toaster />
+                <DocumentPreviewProvider>
+                  <AccessibilityToolbar />
+                  {children}
+                  <Toaster />
+                  <DocumentPreviewOffcanvas />
+                </DocumentPreviewProvider>
               </TooltipProvider>
             </MasterDataProvider>
           </AuthProvider>

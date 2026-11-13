@@ -87,8 +87,9 @@ function VisitCard({ visit, isSelected, onClick }: { visit: Visit; isSelected: b
                 src={visit.citizenPhoto || "/placeholder.svg?height=100&width=100&query=citizen profile"}
                 alt={visit.citizenName}
                 onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  target.src = "/citizen-profile.png"
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = "/placeholder-user.jpg";
                 }}
               />
               <AvatarFallback>

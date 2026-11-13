@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Phone, Navigation, User, FileText, AlertTriangle } from 'lucide-react';
 import MapComponent from '@/components/MapComponent';
 import { format } from 'date-fns';
+import apiClient from '@/lib/api-client';
 
 interface CitizenDetailSheetProps {
     citizen: any | null;
@@ -43,7 +44,15 @@ export function CitizenDetailSheet({ citizen, open, onOpenChange }: CitizenDetai
                 <div className="space-y-6 mt-6">
                     {/* Citizen Profile */}
                     <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg border">
-                        <Avatar className="h-16 w-16 border-2 border-background shadow-sm">
+                        <Avatar
+                            className={`h-16 w-16 border-2 border-background shadow-sm ${citizen.photoUrl ? 'cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all' : ''}`}
+                            onClick={() => {
+                                if (citizen.photoUrl) {
+                                    apiClient.viewDocument(citizen.photoUrl, `${citizen.fullName} - Photo`);
+                                }
+                            }}
+                            title={citizen.photoUrl ? 'Click to preview photo' : undefined}
+                        >
                             <AvatarImage src={citizen.photoUrl} />
                             <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
                                 {citizen.fullName?.charAt(0) ?? 'SC'}

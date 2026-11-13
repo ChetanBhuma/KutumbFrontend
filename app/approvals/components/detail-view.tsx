@@ -89,9 +89,17 @@ export function DetailView({ registration }: DetailViewProps) {
                     <Shield className="h-64 w-64 text-white" />
                 </div>
 
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="relative z-10 flex items-start gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-indigo-700 text-white font-bold text-xl sm:text-2xl flex items-center justify-center shadow-lg border-2 border-indigo-400/40 shrink-0 overflow-hidden">
+                        <div
+                            onClick={() => {
+                                if (citizen.photoUrl && !imgError) {
+                                    apiClient.viewDocument(citizen.photoUrl, `${citizen.fullName || 'Citizen'} - Photo`);
+                                }
+                            }}
+                            className={`h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-indigo-700 text-white font-bold text-xl sm:text-2xl flex items-center justify-center shadow-lg border-2 border-indigo-400/40 shrink-0 overflow-hidden ${citizen.photoUrl && !imgError ? 'cursor-pointer hover:ring-2 hover:ring-white transition-all' : ''}`}
+                            title={citizen.photoUrl && !imgError ? 'Click to preview photo' : undefined}
+                        >
                             {citizen.photoUrl && !imgError ? (
                                 <img
                                     src={citizen.photoUrl}
@@ -103,8 +111,10 @@ export function DetailView({ registration }: DetailViewProps) {
                                 <User className="h-8 w-8 sm:h-10 sm:w-10 text-indigo-100" />
                             )}
                         </div>
-                        <div>
-                            <div className="flex flex-wrap items-center gap-2">
+                        {/* Name + badge row — badge right-aligned to citizen name */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
                                 <h2 className="text-lg sm:text-2xl font-bold text-white tracking-tight">
                                     {citizen.fullName || registration.fullName || "Senior Citizen"}
                                 </h2>
@@ -118,6 +128,16 @@ export function DetailView({ registration }: DetailViewProps) {
                                         {citizen.gender}
                                     </Badge>
                                 )}
+                                </div>
+                                {/* Status badge — right-aligned to name */}
+                                <Badge className={cn(
+                                    "px-2.5 py-1 text-[11px] font-bold shadow-xs whitespace-nowrap shrink-0",
+                                    registration.status === "APPROVED" ? "bg-emerald-500 text-white" :
+                                    registration.status === "REJECTED" ? "bg-rose-600 text-white" :
+                                    "bg-amber-400 text-amber-950"
+                                )}>
+                                    ● {registration.status === "PENDING_REVIEW" ? "Pending Review" : registration.status}
+                                </Badge>
                             </div>
 
                             <p className="text-xs sm:text-sm text-indigo-200 mt-1 flex items-center gap-2">
@@ -125,7 +145,7 @@ export function DetailView({ registration }: DetailViewProps) {
                                 <span className="truncate max-w-md">{citizen.permanentAddress || "Address provided during registration"}</span>
                             </p>
 
-                            <div className="flex flex-wrap items-center gap-3 mt-2.5 text-xs text-slate-300">
+                            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-300">
                                 <span className="flex items-center gap-1 font-mono font-medium">
                                     <Phone className="h-3 w-3 text-emerald-400" />
                                     {citizen.mobileNumber || registration.mobileNumber}
@@ -140,22 +160,11 @@ export function DetailView({ registration }: DetailViewProps) {
                                     <Shield className="h-3 w-3 text-indigo-400" />
                                     District: <strong className="text-white font-bold">{citizen.District?.name || citizen.district?.name || citizen.districtName || "Delhi"}</strong>
                                 </span>
+                                <span className="text-[11px] text-indigo-300 font-mono">
+                                    Submitted: {registration.createdAt ? format(new Date(registration.createdAt), "dd MMM yyyy, hh:mm a") : "—"}
+                                </span>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="flex flex-wrap md:flex-col items-end gap-2 shrink-0 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-indigo-800/60">
-                        <Badge className={cn(
-                            "px-3 py-1 text-xs font-bold shadow-xs",
-                            registration.status === "APPROVED" ? "bg-emerald-500 text-white" :
-                            registration.status === "REJECTED" ? "bg-rose-600 text-white" :
-                            "bg-amber-400 text-amber-950"
-                        )}>
-                            ● Status: {registration.status === "PENDING_REVIEW" ? "Pending Admin Review" : registration.status}
-                        </Badge>
-                        <span className="text-[11px] text-indigo-200 font-mono">
-                            Submitted: {registration.createdAt ? format(new Date(registration.createdAt), "dd MMM yyyy, hh:mm a") : "—"}
-                        </span>
                     </div>
                 </div>
             </div>
@@ -416,22 +425,82 @@ export function DetailView({ registration }: DetailViewProps) {
                                     Domestic Helpers & Caregivers ({householdHelpers.length})
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <CardContent className="p-4 sm:p-6 grid grid-cols-1 gap-3">
                                 {householdHelpers.map((helper: any, idx: number) => (
-                                    <div key={idx} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="font-bold text-xs sm:text-sm text-slate-900">
-                                                {helper.name || helper.fullName} <span className="text-xs text-indigo-700 font-semibold">({helper.role || helper.helperType || "Domestic Help"})</span>
-                                            </p>
-                                            <p className="text-xs text-slate-500 font-mono mt-0.5">{helper.mobileNumber || "No phone"}</p>
-                                            {helper.agencyName && <p className="text-[11px] text-slate-400 mt-0.5">Agency: {helper.agencyName}</p>}
+                                    <div key={idx} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                {helper.photoUrl ? (
+                                                    <img
+                                                        src={helper.photoUrl}
+                                                        alt=""
+                                                        className="w-10 h-12 object-cover rounded border cursor-pointer shrink-0"
+                                                        onClick={() => apiClient.viewDocument(helper.photoUrl, `Passport Photo - ${helper.name || helper.fullName}`)}
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-12 rounded border border-dashed flex items-center justify-center text-slate-400 bg-white shrink-0">
+                                                        <User className="h-4 w-4" />
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <p className="font-bold text-xs sm:text-sm text-slate-900">
+                                                        {helper.name || helper.fullName}
+                                                    </p>
+                                                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                                        <p className="text-xs text-indigo-700 font-semibold">
+                                                            {helper.domesticHelpType === 'Any Other' && helper.otherStaffType ? helper.otherStaffType : (helper.domesticHelpType || helper.role || helper.helperType || helper.staffType || "Domestic Help")}
+                                                        </p>
+                                                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1 rounded border">
+                                                            {helper.jobType || helper.employmentType || 'Permanent'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 font-mono mt-0.5">Mob: {helper.mobileNumber || "No phone"}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                {helper.signatureUrl && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-7 text-xs text-slate-700 border-slate-300 hover:bg-slate-50 gap-1"
+                                                        onClick={() => apiClient.viewDocument(helper.signatureUrl, `${helper.name || 'Servant'} Thumb Impression / Signature`)}
+                                                    >
+                                                        <Eye className="h-3 w-3" /> View Thumb / Sign
+                                                    </Button>
+                                                )}
+                                                {helper.idProofUrl && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-7 text-xs text-indigo-700 border-indigo-200 hover:bg-indigo-50 gap-1"
+                                                        onClick={() => apiClient.viewDocument(helper.idProofUrl, `${helper.name || 'Servant'} ID Proof (${helper.idProofType || 'Govt ID'})`)}
+                                                    >
+                                                        <Eye className="h-3 w-3" /> View ID
+                                                    </Button>
+                                                )}
+                                                <Badge variant="outline" className={cn(
+                                                    "text-xs font-bold px-2 py-0.5",
+                                                    helper.isVerified || helper.verificationStatus === 'Verified' ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-amber-50 text-amber-800 border-amber-300"
+                                                )}>
+                                                    {helper.isVerified || helper.verificationStatus === 'Verified' ? "Verified" : (helper.verificationStatus || "Pending Check")}
+                                                </Badge>
+                                            </div>
                                         </div>
-                                        <Badge variant="outline" className={cn(
-                                            "text-xs font-bold px-2 py-0.5",
-                                            helper.isVerified ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-amber-50 text-amber-800 border-amber-300"
-                                        )}>
-                                            {helper.isVerified ? "Verified" : "Pending Check"}
-                                        </Badge>
+
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs text-slate-600 pt-1.5 border-t border-slate-200">
+                                            {helper.fatherName && <div><span className="text-slate-400">Father:</span> {helper.fatherName}</div>}
+                                            {helper.motherName && <div><span className="text-slate-400">Mother:</span> {helper.motherName}</div>}
+                                            {helper.dob && <div><span className="text-slate-400">DOB:</span> {helper.dob.split('T')[0]}</div>}
+                                            {helper.employedSince && <div><span className="text-slate-400">Employed:</span> {helper.employedSince.split('T')[0]}</div>}
+                                        </div>
+
+                                        {(helper.permanentAddress || helper.localAddress || helper.address) && (
+                                            <div className="text-xs bg-white p-2 rounded border space-y-0.5">
+                                                {helper.permanentAddress && <div><span className="font-medium text-slate-700">Permanent Address:</span> {helper.permanentAddress}</div>}
+                                                {helper.localAddress && <div><span className="font-medium text-slate-700">Local Address:</span> {helper.localAddress}</div>}
+                                                {!helper.permanentAddress && !helper.localAddress && helper.address && <div><span className="font-medium text-slate-700">Address:</span> {helper.address}</div>}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </CardContent>
@@ -464,7 +533,7 @@ export function DetailView({ registration }: DetailViewProps) {
                                         type="button"
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => apiClient.viewDocument(citizen.addressProofUrl)}
+                                        onClick={() => apiClient.viewDocument(citizen.addressProofUrl, 'Address Proof Document')}
                                         className="text-xs bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-bold gap-1"
                                     >
                                         <Eye className="h-3.5 w-3.5" /> Preview
@@ -491,7 +560,7 @@ export function DetailView({ registration }: DetailViewProps) {
                                         type="button"
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => apiClient.viewDocument(citizen.idProofUrl)}
+                                        onClick={() => apiClient.viewDocument(citizen.idProofUrl, 'Identity Proof Document')}
                                         className="text-xs bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-bold gap-1"
                                     >
                                         <Eye className="h-3.5 w-3.5" /> Preview
@@ -518,7 +587,7 @@ export function DetailView({ registration }: DetailViewProps) {
                                         type="button"
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => apiClient.viewDocument(citizen.disabilityCertificateUrl)}
+                                        onClick={() => apiClient.viewDocument(citizen.disabilityCertificateUrl, 'Disability Certificate')}
                                         className="text-xs bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-bold gap-1"
                                     >
                                         <Eye className="h-3.5 w-3.5" /> Preview

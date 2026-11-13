@@ -27,22 +27,40 @@ export class ErrorBoundary extends Component<Props, State> {
         };
     }
 
-    static getDerivedStateFromError(error: Error): State {
+    static getDerivedStateFromError(error: any): State {
+        let normalizedError: Error;
+        if (error instanceof Error) {
+            normalizedError = error;
+        } else if (typeof error === 'string') {
+            normalizedError = new Error(error);
+        } else if (error && typeof error === 'object') {
+            if ('message' in error && typeof error.message === 'string') {
+                normalizedError = new Error(error.message);
+            } else if (error instanceof Event || (error && 'type' in error)) {
+                normalizedError = new Error(`DOM Event error (${error.type || 'unknown event'})`);
+            } else {
+                normalizedError = new Error(JSON.stringify(error));
+            }
+        } else {
+            normalizedError = new Error('An unexpected application error occurred');
+        }
+
         return {
             hasError: true,
-            error,
+            error: normalizedError,
             errorInfo: null,
         };
     }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    componentDidCatch(error: any, errorInfo: ErrorInfo) {
+        const normalized = error instanceof Error ? error : new Error(String(error));
         // Log error to console in development
         if (process.env.NODE_ENV === 'development') {
-            console.error('Error caught by boundary:', error, errorInfo);
+            console.error('Error caught by boundary:', normalized, errorInfo);
         }
 
         // Call custom error handler if provided
-        this.props.onError?.(error, errorInfo);
+        this.props.onError?.(normalized, errorInfo);
 
         // Update state with error info
         this.setState({
@@ -92,7 +110,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
                                     <p className="font-semibold text-sm mb-2">Error Details:</p>
                                     <pre className="text-xs overflow-auto max-h-40 text-destructive">
-                                        {this.state.error.toString()}
+                                        {this.state.error.message || this.state.error.toString()}
                                     </pre>
                                     {this.state.errorInfo && (
                                         <details className="mt-2">

@@ -823,7 +823,7 @@ function RegistrationContent() {
                                                     variant="outline"
                                                     size="sm"
                                                     className="border-slate-300 bg-white text-[#0F52BA] hover:bg-blue-50"
-                                                    onClick={() => window.open(addressProof.url!, '_blank')}
+                                                    onClick={() => apiClient.viewDocument(addressProof.url!, 'Address Proof Document')}
                                                 >
                                                     <Eye className="w-3.5 h-3.5 mr-1" /> View
                                                 </Button>

@@ -155,10 +155,10 @@ class FileStorageService {
                     ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
                     resolve(canvas.toDataURL('image/jpeg', 0.7));
                 };
-                img.onerror = reject;
+                img.onerror = () => reject(new Error('Failed to load image for thumbnail generation'));
                 img.src = e.target?.result as string;
             };
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Failed to read file for thumbnail generation'));
             reader.readAsDataURL(file);
         });
     }
@@ -168,7 +168,7 @@ class FileStorageService {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Failed to read file as base64'));
             reader.readAsDataURL(file);
         });
     }

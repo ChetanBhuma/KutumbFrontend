@@ -37,14 +37,14 @@ class ApiClient {
 
                 return config;
             },
-            (error) => Promise.reject(error)
+            (error) => Promise.reject(error instanceof Error ? error : new Error(String(error || 'Request setup error')))
         );
 
         // Response interceptor - handle token refresh
         this.client.interceptors.response.use(
             (response) => response,
             async (error: AxiosError) => {
-                const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+                const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean; _retry429Count?: number };
 
                 // If 401 and not already retried, try to refresh token
                 if (error.response?.status === 401 && !originalRequest._retry) {
@@ -71,7 +71,7 @@ class ApiClient {
                             }
                             return this.client(originalRequest);
                         }
-                    } catch (refreshError) {
+                    } catch (refreshError: any) {
                         // Refresh failed, clear tokens and redirect to login
                         this.clearTokens();
                         if (typeof window !== 'undefined') {
@@ -83,7 +83,10 @@ class ApiClient {
                             const loginPath = (userType === 'CITIZEN' || userType === 'citizen') ? '/citizen-portal/login' : '/admin/login';
                             window.location.href = loginPath;
                         }
-                        return Promise.reject(refreshError);
+                        const safeRefreshError = refreshError instanceof Error
+                            ? refreshError
+                            : new Error(refreshError?.message || 'Session expired. Redirecting to login.');
+                        return Promise.reject(safeRefreshError);
                     }
                 }
 
@@ -97,7 +100,10 @@ class ApiClient {
                     }
                 }
 
-                return Promise.reject(error);
+                const safeError = error instanceof Error
+                    ? error
+                    : new Error((error as any)?.message || 'An unexpected API error occurred');
+                return Promise.reject(safeError);
             }
         );
     }
@@ -112,8 +118,12 @@ class ApiClient {
         }
     }
 
+    getBaseURL(): string {
+        return this.baseURL;
+    }
+
     // Token management
-    private getAccessToken(): string | null {
+    getAccessToken(): string | null {
         if (typeof window === 'undefined') return null;
         return localStorage.getItem('accessToken');
     }
@@ -292,13 +302,26 @@ class ApiClient {
     }
 
 
-    async viewDocument(fileUrl: string) {
+    async viewDocument(fileUrl: string, title?: string) {
         if (!fileUrl) return;
 
         try {
-            // Handle cloud URLs directly (if external)
-            if (fileUrl.startsWith('http') && !fileUrl.includes(window.location.host)) {
-                window.open(fileUrl, '_blank');
+            const cleanName = fileUrl.split('?')[0].split('/').pop() || 'document';
+            const docTitle = title || 'Document Preview';
+
+            // Handle cloud/external URLs
+            if (fileUrl.startsWith('http') && !fileUrl.includes(window.location.host) && !fileUrl.includes('localhost:5000') && !fileUrl.includes('/api/v1/')) {
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(
+                        new CustomEvent('kutumb:open-document-preview', {
+                            detail: {
+                                url: fileUrl,
+                                title: docTitle,
+                                fileName: cleanName,
+                            }
+                        })
+                    );
+                }
                 return;
             }
 
@@ -314,8 +337,6 @@ class ApiClient {
             let fullUrl = fileUrl;
 
             // Logic to switch to API endpoint for /uploads/
-            // Original URL: http://localhost:3000/uploads/documents/foo.pdf
-            // Target API: http://localhost:3000/api/v1/files/serve/documents/foo.pdf
             if (fileUrl.includes('/uploads/')) {
                 const parts = fileUrl.split('/uploads/');
                 if (parts.length > 1) {
@@ -324,13 +345,8 @@ class ApiClient {
 
                     if (pathSegments.length >= 2) {
                         const folder = pathSegments[0];
-                        const filename = pathSegments.slice(1).join('/'); // technically serveFile might not support nested / but we try.
-                        // Actually serveFile controller BLOCKS slashes in filename.
-                        // So we can only support 1 level deep (folder/file).
-                        // If standard upload, it is folder/file.
-
+                        const filename = pathSegments.slice(1).join('/');
                         fullUrl = `${this.baseURL}/files/serve/${folder}/${filename}`;
-
                     }
                 }
             } else {
@@ -339,7 +355,18 @@ class ApiClient {
                     : `${window.location.origin}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
             }
 
-
+            // Open offcanvas drawer immediately with loading state
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(
+                    new CustomEvent('kutumb:open-document-preview', {
+                        detail: {
+                            url: fileUrl,
+                            title: docTitle,
+                            fileName: cleanName,
+                        }
+                    })
+                );
+            }
 
             const response = await fetch(fullUrl, {
                 headers: {
@@ -354,22 +381,45 @@ class ApiClient {
                 throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
             }
 
+            const contentType = response.headers.get('content-type') || '';
             const blob = await response.blob();
-            // Create object URL from blob
             const blobUrl = URL.createObjectURL(blob);
 
-            // Open in new tab
-            const newWindow = window.open(blobUrl, '_blank');
-            if (!newWindow) {
-                alert("Please allow popups to view this document.");
-            }
+            const isPdf = contentType.includes('pdf') || cleanName.toLowerCase().endsWith('.pdf');
+            const isImage = contentType.startsWith('image/') || /\.(jpg|jpeg|png|webp|svg|gif)$/i.test(cleanName);
 
-            // Clean up the object URL after a delay (e.g. 1 minute) to allow time for the new tab to load it
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            // Update offcanvas with loaded blob & detected type
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(
+                    new CustomEvent('kutumb:open-document-preview', {
+                        detail: {
+                            url: fileUrl,
+                            title: docTitle,
+                            fileName: cleanName,
+                            blob,
+                            blobUrl,
+                            fileType: isPdf ? 'pdf' : (isImage ? 'image' : 'other')
+                        }
+                    })
+                );
+            }
 
         } catch (error: any) {
             console.error("View doc error", error);
-            alert(error.message || "Error viewing document");
+            if (typeof window !== 'undefined') {
+                const errorMsg = error instanceof Error
+                    ? error.message
+                    : (typeof error === 'string' ? error : "Error viewing document");
+                window.dispatchEvent(
+                    new CustomEvent('kutumb:open-document-preview', {
+                        detail: {
+                            url: fileUrl,
+                            title: title || 'Document Preview',
+                            error: errorMsg
+                        }
+                    })
+                );
+            }
         }
     }
 

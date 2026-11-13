@@ -166,7 +166,7 @@ export default function CitizenDocumentsPage() {
 
                                             {/* Actions */}
                                             <div className="flex gap-2">
-                                                <Button size="sm" variant="outline" onClick={() => window.open(doc.url, '_blank')}>
+                                                <Button size="sm" variant="outline" onClick={() => apiClient.viewDocument(doc.url, doc.filename || doc.type || 'Document')}>
                                                     👁️ View
                                                 </Button>
                                                 <Button size="sm" variant="outline" onClick={() => handleDelete(doc.id)}>
@@ -190,7 +190,15 @@ export default function CitizenDocumentsPage() {
                         <CardContent>
                             <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-lg max-w-md">
                                 <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                                    <div
+                                        className={`w-20 h-20 bg-white rounded-full flex items-center justify-center overflow-hidden ${citizen.photoUrl ? 'cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all' : ''}`}
+                                        onClick={() => {
+                                            if (citizen.photoUrl) {
+                                                apiClient.viewDocument(citizen.photoUrl, `${citizen.fullName} - Photo`);
+                                            }
+                                        }}
+                                        title={citizen.photoUrl ? 'Click to preview photo' : undefined}
+                                    >
                                         {citizen.photoUrl ? (
                                             <img src={citizen.photoUrl} alt="" className="w-full h-full object-cover" />
                                         ) : (

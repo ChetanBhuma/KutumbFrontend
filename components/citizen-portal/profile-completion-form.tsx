@@ -139,11 +139,18 @@ export default function ProfileCompletionForm() {
 
     const [showLocationDialog, setShowLocationDialog] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
+    const [showStaffCamera, setShowStaffCamera] = useState(false);
+    const [capturingStaffCameraIndex, setCapturingStaffCameraIndex] = useState<number | null>(null);
     const webcamRef = useRef<Webcam>(null);
+    const staffWebcamRef = useRef<Webcam>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const staffFileInputRef = useRef<HTMLInputElement>(null);
+    const staffPhotoInputRef = useRef<HTMLInputElement>(null);
+    const staffSignatureInputRef = useRef<HTMLInputElement>(null);
     const addressProofInputRef = useRef<HTMLInputElement>(null);
     const [activeStaffIndex, setActiveStaffIndex] = useState<number | null>(null);
+    const [activeStaffPhotoIndex, setActiveStaffPhotoIndex] = useState<number | null>(null);
+    const [activeStaffSignatureIndex, setActiveStaffSignatureIndex] = useState<number | null>(null);
 
     const [detectedAddress, setDetectedAddress] = useState<{
         pincode: string;
@@ -175,11 +182,32 @@ export default function ProfileCompletionForm() {
         }
     };
 
+    const handleStaffPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || activeStaffPhotoIndex === null) return;
+        try {
+            const res = await apiClient.uploadDocument(file, 'StaffPhoto');
+            if (res.success) {
+                const url = res.data.document.fileUrl;
+                setFormData((prev: any) => {
+                    const staff = [...prev.staffDetails];
+                    staff[activeStaffPhotoIndex] = { ...staff[activeStaffPhotoIndex], photoUrl: url };
+                    return { ...prev, staffDetails: staff };
+                });
+                toast({ title: "Success", description: "Servant photo uploaded successfully" });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "Failed to upload servant photo", variant: "destructive" });
+        }
+        setActiveStaffPhotoIndex(null);
+    };
+
     const handleStaffDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || activeStaffIndex === null) return;
         try {
-            const res = await apiClient.uploadDocument(file, 'IdentityProof');
+            const res = await apiClient.uploadDocument(file, 'StaffIdentityProof');
             if (res.success) {
                 const url = res.data.document.fileUrl;
                 setFormData((prev: any) => {
@@ -194,6 +222,27 @@ export default function ProfileCompletionForm() {
             toast({ title: "Error", description: "Failed to upload document", variant: "destructive" });
         }
         setActiveStaffIndex(null);
+    };
+
+    const handleStaffSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || activeStaffSignatureIndex === null) return;
+        try {
+            const res = await apiClient.uploadDocument(file, 'StaffSignature');
+            if (res.success) {
+                const url = res.data.document.fileUrl;
+                setFormData((prev: any) => {
+                    const staff = [...prev.staffDetails];
+                    staff[activeStaffSignatureIndex] = { ...staff[activeStaffSignatureIndex], signatureUrl: url };
+                    return { ...prev, staffDetails: staff };
+                });
+                toast({ title: "Success", description: "Thumb impression / Signature uploaded successfully" });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "Failed to upload thumb impression / signature", variant: "destructive" });
+        }
+        setActiveStaffSignatureIndex(null);
     };
 
     const handleAddressProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,6 +279,43 @@ export default function ProfileCompletionForm() {
                     }
                 } catch (error) {
                     console.error('Photo upload failed', error);
+                    toast({ title: "Warning", description: "Photo captured but upload failed. Please try again.", variant: "destructive" });
+                }
+            }
+        }
+    };
+
+    const captureStaffPhoto = async () => {
+        if (staffWebcamRef.current && capturingStaffCameraIndex !== null) {
+            const imageSrc = staffWebcamRef.current.getScreenshot();
+            const idx = capturingStaffCameraIndex;
+            if (imageSrc) {
+                const res = await fetch(imageSrc);
+                const blob = await res.blob();
+                const file = new File([blob], `staff_${idx}_capture.jpg`, { type: "image/jpeg" });
+
+                // Optimistic local preview
+                setFormData((prev: any) => {
+                    const staff = [...prev.staffDetails];
+                    staff[idx] = { ...staff[idx], photoUrl: imageSrc };
+                    return { ...prev, staffDetails: staff };
+                });
+                setShowStaffCamera(false);
+                setCapturingStaffCameraIndex(null);
+
+                try {
+                    const uploadRes = await apiClient.uploadDocument(file, 'ProfilePhoto');
+                    if (uploadRes.success) {
+                        const url = uploadRes.data.document.fileUrl;
+                        setFormData((prev: any) => {
+                            const staff = [...prev.staffDetails];
+                            staff[idx] = { ...staff[idx], photoUrl: url };
+                            return { ...prev, staffDetails: staff };
+                        });
+                        toast({ title: "Success", description: "Servant photo captured and uploaded successfully" });
+                    }
+                } catch (error) {
+                    console.error('Staff photo upload failed', error);
                     toast({ title: "Warning", description: "Photo captured but upload failed. Please try again.", variant: "destructive" });
                 }
             }
@@ -320,11 +406,23 @@ export default function ProfileCompletionForm() {
                         })) || [],
 
                         staffDetails: c.HouseholdHelp?.map((h: any) => ({
-                            staffType: h.staffType || h.category || 'Domestic Help',
-                            name: h.name,
-                            mobileNumber: h.mobileNumber,
-                            idProofType: h.idProofType,
-                            idProofUrl: h.idProofUrl,
+                            photoUrl: h.photoUrl || '',
+                            signatureUrl: h.signatureUrl || '',
+                            jobType: h.jobType || h.employmentType || 'Permanent',
+                            name: h.name || '',
+                            fatherName: h.fatherName || '',
+                            motherName: h.motherName || '',
+                            dob: h.dob || '',
+                            mobileNumber: h.mobileNumber || '',
+                            permanentAddress: h.permanentAddress || '',
+                            localAddress: h.localAddress || h.address || '',
+                            idProofType: h.idProofType || 'Voter ID',
+                            idProofNumber: h.idProofNumber || '',
+                            idProofUrl: h.idProofUrl || '',
+                            employedSince: h.employedSince || '',
+                            domesticHelpType: h.domesticHelpType || h.staffType || 'Cooking',
+                            otherStaffType: h.otherStaffType || '',
+                            staffType: h.staffType || 'Domestic Help',
                         })) || [],
 
                         bloodGroup: c.bloodGroup || '',
@@ -761,9 +859,27 @@ export default function ProfileCompletionForm() {
                                 {/* Photo Upload Logic */}
                                 {/* Photo Upload Logic */}
                                 <div className="relative group w-32 h-32">
-                                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 shadow-md bg-slate-50 flex items-center justify-center">
+                                    <div
+                                        onClick={() => {
+                                            if (photoPreview || formData.photoUrl) {
+                                                apiClient.viewDocument(formData.photoUrl || photoPreview, 'Profile Photo');
+                                            }
+                                        }}
+                                        className={`w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 shadow-md bg-slate-50 flex items-center justify-center ${photoPreview || formData.photoUrl ? 'cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all' : ''}`}
+                                        title={photoPreview || formData.photoUrl ? 'Click to preview photo' : undefined}
+                                    >
                                         {photoPreview ? <img src={photoPreview} className="w-full h-full object-cover" /> : <User className="h-16 w-16 text-slate-300" />}
                                     </div>
+                                    {(photoPreview || formData.photoUrl) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => apiClient.viewDocument(formData.photoUrl || photoPreview, 'Profile Photo')}
+                                            className="absolute top-0 right-0 p-1.5 bg-slate-900/80 text-white rounded-full shadow hover:bg-slate-900 border border-white/50"
+                                            title="Preview Photo"
+                                        >
+                                            <Eye className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
                                     <div className="absolute -bottom-2 -right-2 flex gap-1">
                                         <button type="button" onClick={() => setShowCamera(true)} className="p-2 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 border-2 border-white" title="Take with Camera">
                                             <Camera className="h-4 w-4" />
@@ -1002,7 +1118,7 @@ export default function ProfileCompletionForm() {
                                             <div className="flex items-center gap-2 p-2 px-4 bg-green-50 border border-green-200 rounded-md text-green-700 w-full md:w-auto">
                                                 <CheckCircle2 className="h-5 w-5" />
                                                 <span className="text-sm font-medium">Document Uploaded</span>
-                                                <Button type="button" variant="ghost" size="sm" className="ml-2 h-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => apiClient.viewDocument(formData.addressProofUrl)}>
+                                                <Button type="button" variant="ghost" size="sm" className="ml-2 h-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => apiClient.viewDocument(formData.addressProofUrl, 'Address Proof Document')}>
                                                     <Eye className="h-4 w-4 mr-1" /> Preview
                                                 </Button>
                                                 <Button variant="ghost" size="sm" className="ml-2 h-6 w-6 p-0 text-red-500" onClick={() => setFormData((prev: any) => ({ ...prev, addressProofUrl: '' }))}>
@@ -1163,74 +1279,439 @@ export default function ProfileCompletionForm() {
                     {currentStep === 4 && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
-                                <Label className="text-base">Household Service Providers</Label>
-                                <Button variant="outline" size="sm" onClick={() => addItem('staffDetails', { staffType: 'Domestic Help', name: '', mobileNumber: '', idProofType: 'VoterID', idProofUrl: '' })}>
-                                    <Plus className="h-4 w-4 mr-2" /> Add Staff
+                                <div>
+                                    <Label className="text-base font-semibold text-gray-900">Household Staff & Servant Verification</Label>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Please provide complete details for domestic helps, cooks, attendants, or drivers for police verification</p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => addItem('staffDetails', {
+                                        staffType: 'Domestic Help',
+                                        name: '',
+                                        fatherName: '',
+                                        motherName: '',
+                                        dob: '',
+                                        mobileNumber: '',
+                                        permanentAddress: '',
+                                        localAddress: '',
+                                        idProofType: 'Voter ID',
+                                        idProofNumber: '',
+                                        idProofUrl: '',
+                                        photoUrl: '',
+                                        signatureUrl: '',
+                                        jobType: 'Permanent',
+                                        employedSince: '',
+                                        domesticHelpType: 'Cooking',
+                                        otherStaffType: ''
+                                    })}
+                                >
+                                    <Plus className="h-4 w-4 mr-2" /> Add Staff / Servant
                                 </Button>
                             </div>
 
-                            {formData.staffDetails.length === 0 && <div className="text-center text-gray-400 py-8 border-2 border-dashed rounded-lg">No staff details added. Click "Add Staff" if applicable.</div>}
+                            {formData.staffDetails.length === 0 && (
+                                <div className="text-center text-gray-400 py-10 border-2 border-dashed rounded-lg bg-slate-50/50">
+                                    <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                                    <p className="text-sm font-medium text-gray-600">No household staff details added</p>
+                                    <p className="text-xs text-gray-400 mt-1">If you employ domestic help, click "Add Staff / Servant" above.</p>
+                                </div>
+                            )}
 
                             {formData.staffDetails.map((staff: any, idx: number) => (
-                                <div key={idx} className="border p-4 rounded-lg bg-slate-50 relative space-y-3">
-                                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-red-500" onClick={() => removeItem('staffDetails', idx)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                <div key={idx} className="border border-slate-200 p-5 rounded-xl bg-white shadow-sm relative space-y-5">
+                                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                        <div className="flex items-center gap-2">
+                                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                                                {idx + 1}
+                                            </span>
+                                            <span className="font-semibold text-sm text-slate-800">
+                                                {staff.name ? staff.name : `Servant / Help #${idx + 1}`}
+                                                {staff.domesticHelpType ? ` (${staff.domesticHelpType})` : ''}
+                                            </span>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                                            onClick={() => removeItem('staffDetails', idx)}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                        </Button>
+                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label>Staff Type</Label>
-                                            <Select value={staff.staffType} onValueChange={v => updateItem('staffDetails', idx, 'staffType', v)}>
-                                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    {['Domestic Help', 'Driver', 'Watchman', 'Tenant'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Name</Label>
-                                            <Input value={staff.name} onChange={e => updateItem('staffDetails', idx, 'name', e.target.value)} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Mobile</Label>
-                                            <Input value={staff.mobileNumber} onChange={e => updateItem('staffDetails', idx, 'mobileNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} maxLength={10} />
+                                    {/* PASSPORT SIZE PHOTO */}
+                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80">
+                                        <Label className="text-xs font-semibold text-slate-700 block mb-2">
+                                            Passport Size Photo
+                                        </Label>
+                                        <div className="flex items-center gap-4">
+                                            {staff.photoUrl ? (
+                                                <div className="relative group w-20 h-24 rounded-md overflow-hidden border border-slate-300 bg-slate-200 shrink-0">
+                                                    <img
+                                                        src={staff.photoUrl}
+                                                        alt="Servant Photo"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-20 h-24 rounded-md border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 bg-white shrink-0">
+                                                    <Camera className="h-6 w-6 mb-1 text-slate-300" />
+                                                    <span className="text-[10px] text-center font-medium">Passport Photo</span>
+                                                </div>
+                                            )}
+
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 text-xs gap-1.5 bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                                                        onClick={() => {
+                                                            setCapturingStaffCameraIndex(idx);
+                                                            setShowStaffCamera(true);
+                                                        }}
+                                                    >
+                                                        <Camera className="h-3.5 w-3.5" />
+                                                        {staff.photoUrl ? 'Retake Photo' : 'Capture with Camera'}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 text-xs gap-1.5 bg-white"
+                                                        onClick={() => {
+                                                            setActiveStaffPhotoIndex(idx);
+                                                            staffPhotoInputRef.current?.click();
+                                                        }}
+                                                    >
+                                                        <Upload className="h-3.5 w-3.5" />
+                                                        Upload Photo
+                                                    </Button>
+                                                    {staff.photoUrl && (
+                                                        <>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5"
+                                                                onClick={() => apiClient.viewDocument(staff.photoUrl, `Passport Photo - ${staff.name || 'Servant'}`)}
+                                                            >
+                                                                <Eye className="h-3.5 w-3.5" /> Preview
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 text-xs text-red-500 hover:bg-red-50 px-2"
+                                                                onClick={() => updateItem('staffDetails', idx, 'photoUrl', '')}
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-slate-500">
+                                                    Take live photo using webcam or upload a recent passport size photograph (JPG, PNG).
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* ID Proof Section */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-white rounded border">
-                                        <div className="space-y-2">
-                                            <Label>ID Proof Type</Label>
-                                            <Select value={staff.idProofType} onValueChange={v => updateItem('staffDetails', idx, 'idProofType', v)}>
-                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                    {/* Basic Identity Names */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Name of the Servant *</Label>
+                                            <Input
+                                                placeholder="Full Name"
+                                                value={staff.name || ''}
+                                                onChange={e => updateItem('staffDetails', idx, 'name', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Father's Name</Label>
+                                            <Input
+                                                placeholder="Father's Full Name"
+                                                value={staff.fatherName || ''}
+                                                onChange={e => updateItem('staffDetails', idx, 'fatherName', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Mother's Name</Label>
+                                            <Input
+                                                placeholder="Mother's Full Name"
+                                                value={staff.motherName || ''}
+                                                onChange={e => updateItem('staffDetails', idx, 'motherName', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Dob, Mobile, Date Employed */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Date of Birth (DOB)</Label>
+                                            <Input
+                                                type="date"
+                                                value={staff.dob ? staff.dob.split('T')[0] : ''}
+                                                onChange={e => updateItem('staffDetails', idx, 'dob', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Mobile No. *</Label>
+                                            <Input
+                                                type="tel"
+                                                placeholder="10 digit mobile"
+                                                value={staff.mobileNumber || ''}
+                                                maxLength={10}
+                                                onChange={e => updateItem('staffDetails', idx, 'mobileNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Date Since When Employed</Label>
+                                            <Input
+                                                type="date"
+                                                value={staff.employedSince ? staff.employedSince.split('T')[0] : ''}
+                                                onChange={e => updateItem('staffDetails', idx, 'employedSince', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Domestic Help Type & Job Type */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-slate-50/70 rounded-lg border border-slate-200/80">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-700">Domestic Help Type *</Label>
+                                            <Select
+                                                value={staff.domesticHelpType || 'Cooking'}
+                                                onValueChange={v => updateItem('staffDetails', idx, 'domesticHelpType', v)}
+                                            >
+                                                <SelectTrigger className="bg-white">
+                                                    <SelectValue placeholder="Select Domestic Help Type" />
+                                                </SelectTrigger>
                                                 <SelectContent>
-                                                    {['VoterID', 'Driving License', 'Other'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                                    <SelectItem value="Cooking">Cooking</SelectItem>
+                                                    <SelectItem value="Dusting & Utensil Cleaning">Dusting & Utensil Cleaning</SelectItem>
+                                                    <SelectItem value="Outdoor works">Outdoor works</SelectItem>
+                                                    <SelectItem value="Attending guest/visitor">Attending guest/visitor</SelectItem>
+                                                    <SelectItem value="Attending phone calls">Attending phone calls</SelectItem>
+                                                    <SelectItem value="Any Other">Any Other</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="flex items-end gap-2">
-                                            {staff.idProofUrl ? (
-                                                <div className="flex items-center gap-2 w-full">
-                                                    <div className="flex items-center gap-2 text-green-600 text-sm border p-2 rounded flex-1">
-                                                        <CheckCircle2 className="h-4 w-4" /> Uploaded
+
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-slate-700">Job Type *</Label>
+                                            <Select
+                                                value={staff.jobType || 'Permanent'}
+                                                onValueChange={v => {
+                                                    updateItem('staffDetails', idx, 'jobType', v);
+                                                    updateItem('staffDetails', idx, 'employmentType', v === 'Permanent' ? 'Full-Time' : v);
+                                                }}
+                                            >
+                                                <SelectTrigger className="bg-white">
+                                                    <SelectValue placeholder="Select Job Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Permanent">Permanent</SelectItem>
+                                                    <SelectItem value="Part-Time">Part-Time</SelectItem>
+                                                    <SelectItem value="Temporary">Temporary</SelectItem>
+                                                    <SelectItem value="Daily Wage">Daily Wage</SelectItem>
+                                                    <SelectItem value="Other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {staff.domesticHelpType === 'Any Other' && (
+                                            <div className="space-y-1.5 md:col-span-2">
+                                                <Label className="text-xs font-semibold text-slate-700">Specify Other Domestic Help Type *</Label>
+                                                <Input
+                                                    className="bg-white"
+                                                    placeholder="e.g. Gardner, Caretaker, Driver"
+                                                    value={staff.otherStaffType || ''}
+                                                    onChange={e => updateItem('staffDetails', idx, 'otherStaffType', e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Addresses */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Permanent Address</Label>
+                                            <Textarea
+                                                rows={2}
+                                                placeholder="Permanent Village / Town address with district & state"
+                                                value={staff.permanentAddress || ''}
+                                                onChange={e => updateItem('staffDetails', idx, 'permanentAddress', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-slate-700">Local Address</Label>
+                                            <Textarea
+                                                rows={2}
+                                                placeholder="Current local address in Delhi / NCR"
+                                                value={staff.localAddress || ''}
+                                                onChange={e => updateItem('staffDetails', idx, 'localAddress', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Any Govt Issued ID */}
+                                    <div className="p-4 bg-slate-50/70 rounded-lg border border-slate-200/80 space-y-3">
+                                        <Label className="text-xs font-semibold text-slate-700 block">
+                                            Any Govt Issued ID (Proof & Details)
+                                        </Label>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div className="space-y-1">
+                                                <Label className="text-[11px] text-slate-500">ID Proof Type</Label>
+                                                <Select
+                                                    value={staff.idProofType || 'Voter ID'}
+                                                    onValueChange={v => updateItem('staffDetails', idx, 'idProofType', v)}
+                                                >
+                                                    <SelectTrigger className="bg-white h-9">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Voter ID">Voter ID</SelectItem>
+                                                        <SelectItem value="Driving License">Driving License</SelectItem>
+                                                        <SelectItem value="Passport">Passport</SelectItem>
+                                                        <SelectItem value="PAN Card">PAN Card</SelectItem>
+                                                        <SelectItem value="Other">Other Govt ID</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <Label className="text-[11px] text-slate-500">ID Document / Card Number</Label>
+                                                <Input
+                                                    className="bg-white h-9"
+                                                    placeholder="e.g. Voter ID / Driving License / Passport / PAN No."
+                                                    value={staff.idProofNumber || ''}
+                                                    onChange={e => updateItem('staffDetails', idx, 'idProofNumber', e.target.value)}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <Label className="text-[11px] text-slate-500">ID Document File</Label>
+                                                {staff.idProofUrl ? (
+                                                    <div className="flex items-center gap-1.5 h-9">
+                                                        <div className="flex items-center gap-1.5 text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded text-xs flex-1 truncate">
+                                                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                                                            <span className="truncate font-medium">Uploaded</span>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-9 px-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                                            onClick={() => apiClient.viewDocument(staff.idProofUrl, `${staff.name || 'Servant'} ID Proof (${staff.idProofType || 'Govt ID'})`)}
+                                                            title="Preview in 50vw Drawer"
+                                                        >
+                                                            <Eye className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-9 px-2 text-red-500 border-red-200 hover:bg-red-50"
+                                                            onClick={() => updateItem('staffDetails', idx, 'idProofUrl', '')}
+                                                            title="Remove File"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
                                                     </div>
-                                                    <Button variant="outline" size="sm" onClick={() => apiClient.viewDocument(staff.idProofUrl)} title="View Document">
-                                                        <Eye className="h-4 w-4" />
+                                                ) : (
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        className="w-full h-9 text-xs"
+                                                        onClick={() => {
+                                                            setActiveStaffIndex(idx);
+                                                            staffFileInputRef.current?.click();
+                                                        }}
+                                                    >
+                                                        <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload ID Document
                                                     </Button>
-                                                    <Button variant="outline" size="sm" onClick={() => updateItem('staffDetails', idx, 'idProofUrl', '')} title="Delete / Replace" className="text-red-500 hover:text-red-600">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Thumb Impression or Signature */}
+                                    <div className="p-4 bg-slate-50/70 rounded-lg border border-slate-200/80 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label className="text-xs font-semibold text-slate-700 block">
+                                                    Thumb Impression or Signature
+                                                </Label>
+                                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                                    Upload scanned copy / photo of thumb impression or signature of the servant
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                            {staff.signatureUrl ? (
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                    <div
+                                                        className="h-12 w-20 rounded border bg-white flex items-center justify-center overflow-hidden cursor-pointer shadow-xs hover:border-blue-400 shrink-0"
+                                                        onClick={() => apiClient.viewDocument(staff.signatureUrl, `${staff.name || 'Servant'} Thumb Impression / Signature`)}
+                                                        title="Click to preview in 50vw drawer"
+                                                    >
+                                                        <img
+                                                            src={staff.signatureUrl}
+                                                            alt="Signature/Thumb"
+                                                            className="h-full w-full object-contain p-0.5"
+                                                            onError={(e: any) => {
+                                                                e.currentTarget.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-9 px-3 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5"
+                                                            onClick={() => apiClient.viewDocument(staff.signatureUrl, `${staff.name || 'Servant'} Thumb Impression / Signature`)}
+                                                            title="Preview in 50vw Drawer"
+                                                        >
+                                                            <Eye className="h-3.5 w-3.5" /> Preview
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-9 px-3 text-xs text-red-500 border-red-200 hover:bg-red-50 gap-1.5"
+                                                            onClick={() => updateItem('staffDetails', idx, 'signatureUrl', '')}
+                                                            title="Remove Thumb Impression / Signature"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" /> Remove
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             ) : (
-                                                <Button variant="secondary" className="w-full" onClick={() => { setActiveStaffIndex(idx); staffFileInputRef.current?.click(); }}>
-                                                    <Upload className="h-4 w-4 mr-2" /> Upload ID Proof
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    className="h-9 text-xs"
+                                                    onClick={() => {
+                                                        setActiveStaffSignatureIndex(idx);
+                                                        staffSignatureInputRef.current?.click();
+                                                    }}
+                                                >
+                                                    <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload Thumb Impression or Signature
                                                 </Button>
                                             )}
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                            {/* Hidden Input for Staff Docs - Explicitly allowing images and PDF */}
+
+                            {/* Hidden Input for Staff ID Proof Docs */}
                             <input
                                 type="file"
                                 ref={staffFileInputRef}
@@ -1238,7 +1719,31 @@ export default function ProfileCompletionForm() {
                                 accept="image/jpeg,image/png,image/jpg,application/pdf"
                                 onChange={(e) => {
                                     handleStaffDocUpload(e);
-                                    e.target.value = ''; // Reset
+                                    e.target.value = '';
+                                }}
+                            />
+
+                            {/* Hidden Input for Staff Passport Photo */}
+                            <input
+                                type="file"
+                                ref={staffPhotoInputRef}
+                                className="hidden"
+                                accept="image/jpeg,image/png,image/jpg"
+                                onChange={(e) => {
+                                    handleStaffPhotoUpload(e);
+                                    e.target.value = '';
+                                }}
+                            />
+
+                            {/* Hidden Input for Staff Thumb Impression / Signature */}
+                            <input
+                                type="file"
+                                ref={staffSignatureInputRef}
+                                className="hidden"
+                                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                onChange={(e) => {
+                                    handleStaffSignatureUpload(e);
+                                    e.target.value = '';
                                 }}
                             />
                         </div>
@@ -1336,6 +1841,42 @@ export default function ProfileCompletionForm() {
                             <div className="bg-slate-50 p-6 rounded-lg space-y-6">
                                 <h3 className="font-bold text-xl border-b pb-4 text-gray-800">Final Review</h3>
 
+                                {/* Profile Photo centered in circular format like Step 1 */}
+                                <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                                    <div className="relative group w-32 h-32">
+                                        <div
+                                            onClick={() => {
+                                                if (photoPreview || formData.photoUrl) {
+                                                    apiClient.viewDocument(formData.photoUrl || photoPreview, 'Profile Photo');
+                                                }
+                                            }}
+                                            className={`w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md bg-slate-100 flex items-center justify-center ${photoPreview || formData.photoUrl ? 'cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all' : ''}`}
+                                            title={photoPreview || formData.photoUrl ? 'Click to preview photo' : undefined}
+                                        >
+                                            {photoPreview || formData.photoUrl ? (
+                                                <img
+                                                    src={photoPreview || formData.photoUrl}
+                                                    alt={formData.fullName || "Profile Photo"}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <User className="h-16 w-16 text-slate-300" />
+                                            )}
+                                        </div>
+                                        {(photoPreview || formData.photoUrl) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => apiClient.viewDocument(formData.photoUrl || photoPreview, 'Profile Photo')}
+                                                className="absolute top-0 right-0 p-1.5 bg-slate-900/80 text-white rounded-full shadow hover:bg-slate-900 border border-white/50 transition-transform hover:scale-105"
+                                                title="Preview Photo"
+                                            >
+                                                <Eye className="h-3.5 w-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-500 mt-2 font-medium">Profile Photo</span>
+                                </div>
+
                                 {/* 1. Personal Info */}
                                 <div className="space-y-3">
                                     <h4 className="font-semibold text-blue-700 bg-blue-50 p-2 rounded">Personal Information</h4>
@@ -1373,6 +1914,20 @@ export default function ProfileCompletionForm() {
                                             <span className="block text-gray-500 text-xs">District</span>
                                             <span className="font-medium">{masters.districts.find((d: any) => d.id === formData.district)?.name || formData.district || '-'}</span>
                                         </div>
+                                        {formData.addressProofUrl && (
+                                            <div className="col-span-1 md:col-span-2 pt-2 border-t flex items-center justify-between">
+                                                <span className="text-xs text-gray-500">Address Proof Document:</span>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => apiClient.viewDocument(formData.addressProofUrl, 'Address Proof Document')}
+                                                    className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 gap-1"
+                                                >
+                                                    <Eye className="h-3.5 w-3.5" /> Preview Address Proof
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1398,15 +1953,88 @@ export default function ProfileCompletionForm() {
 
                                 {/* 4. Staff */}
                                 <div className="space-y-3">
-                                    <h4 className="font-semibold text-blue-700 bg-blue-50 p-2 rounded">Household Staff</h4>
+                                    <h4 className="font-semibold text-blue-700 bg-blue-50 p-2 rounded">Household Staff & Domestic Help ({formData.staffDetails.length})</h4>
                                     {formData.staffDetails.length > 0 ? (
                                         <div className="grid grid-cols-1 gap-3">
                                             {formData.staffDetails.map((staff: any, idx: number) => (
-                                                <div key={idx} className="flex justify-between items-center text-sm border-b pb-2 last:border-0 border-gray-200">
-                                                    <div>
-                                                        <span className="font-semibold">{staff.staffType}</span>: {staff.name}
+                                                <div key={idx} className="p-3 bg-white border border-gray-200 rounded-lg text-sm space-y-2">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex items-center gap-3">
+                                                            {staff.photoUrl ? (
+                                                                <div className="relative group w-12 h-14 rounded border border-gray-200 overflow-hidden shrink-0 bg-gray-50">
+                                                                    <img src={staff.photoUrl} alt={staff.name} className="w-full h-full object-cover" />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => apiClient.viewDocument(staff.photoUrl, `Passport Photo - ${staff.name}`)}
+                                                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                                                        title="Preview Photo"
+                                                                    >
+                                                                        <Eye className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="w-12 h-14 rounded border border-dashed border-gray-300 flex items-center justify-center text-gray-400 bg-gray-50 shrink-0">
+                                                                    <User className="h-5 w-5" />
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <span className="font-semibold text-gray-900 block">{staff.name || 'Unnamed Staff'}</span>
+                                                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                                                    <span className="text-xs text-blue-600 font-medium">
+                                                                        {staff.domesticHelpType === 'Any Other' && staff.otherStaffType ? staff.otherStaffType : (staff.domesticHelpType || staff.staffType || 'Domestic Help')}
+                                                                    </span>
+                                                                    <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium border border-slate-200">
+                                                                        {staff.jobType || 'Permanent'}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-xs text-gray-500 block mt-0.5">Mob: {staff.mobileNumber || '-'}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            {staff.signatureUrl && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => apiClient.viewDocument(staff.signatureUrl, `${staff.name || 'Staff'} Thumb Impression / Signature`)}
+                                                                    className="h-7 px-2 text-xs text-slate-700 border-slate-200 hover:bg-slate-50 gap-1"
+                                                                >
+                                                                    <Eye className="h-3 w-3" /> View Signature / Thumb
+                                                                </Button>
+                                                            )}
+                                                            {staff.idProofUrl && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => apiClient.viewDocument(staff.idProofUrl, `${staff.name} ID Proof (${staff.idProofType || 'Govt ID'})`)}
+                                                                    className="h-7 px-2 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 gap-1"
+                                                                >
+                                                                    <Eye className="h-3 w-3" /> View ID Proof
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-gray-600">{staff.mobileNumber}</div>
+
+                                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t border-gray-100 text-xs text-gray-600">
+                                                        <div><span className="text-gray-400 block">Father:</span> {staff.fatherName || '-'}</div>
+                                                        <div><span className="text-gray-400 block">Mother:</span> {staff.motherName || '-'}</div>
+                                                        <div><span className="text-gray-400 block">DOB:</span> {staff.dob ? staff.dob.split('T')[0] : '-'}</div>
+                                                        <div><span className="text-gray-400 block">Employed Since:</span> {staff.employedSince ? staff.employedSince.split('T')[0] : '-'}</div>
+                                                        <div><span className="text-gray-400 block">{staff.idProofType || 'Voter ID'}:</span> {staff.idProofNumber || staff.voterId || '-'}</div>
+                                                    </div>
+
+                                                    {(staff.permanentAddress || staff.localAddress) && (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-xs text-gray-600 bg-slate-50 p-2 rounded">
+                                                            {staff.permanentAddress && (
+                                                                <div><span className="font-medium text-gray-500 block">Permanent Address:</span> {staff.permanentAddress}</div>
+                                                            )}
+                                                            {staff.localAddress && (
+                                                                <div><span className="font-medium text-gray-500 block">Local Address:</span> {staff.localAddress}</div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -1511,6 +2139,40 @@ export default function ProfileCompletionForm() {
                         <div className="flex gap-2 w-full justify-center">
                             <Button variant="outline" onClick={() => setShowCamera(false)}>Cancel</Button>
                             <Button onClick={capturePhoto}><Camera className="mr-2 h-4 w-4" /> Capture Photo</Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Staff Webcam Dialog */}
+            <Dialog open={showStaffCamera} onOpenChange={(open) => {
+                setShowStaffCamera(open);
+                if (!open) setCapturingStaffCameraIndex(null);
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogTitle>Take Servant Passport Photo</DialogTitle>
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="relative rounded-lg overflow-hidden bg-black w-full aspect-video flex items-center justify-center">
+                            <Webcam
+                                audio={false}
+                                ref={staffWebcamRef}
+                                screenshotFormat="image/jpeg"
+                                className="w-full h-full object-cover"
+                                mirrored={true}
+                                videoConstraints={{ facingMode: "user" }}
+                                onUserMedia={() => { }}
+                                onUserMediaError={(err) => {
+                                    console.error('Staff webcam error:', err);
+                                    toast({ title: "Camera Error", description: "Could not access camera. Please check permissions.", variant: "destructive" });
+                                }}
+                            />
+                        </div>
+                        <div className="flex gap-2 w-full justify-center">
+                            <Button variant="outline" onClick={() => {
+                                setShowStaffCamera(false);
+                                setCapturingStaffCameraIndex(null);
+                            }}>Cancel</Button>
+                            <Button onClick={captureStaffPhoto}><Camera className="mr-2 h-4 w-4" /> Capture Photo</Button>
                         </div>
                     </div>
                 </DialogContent>

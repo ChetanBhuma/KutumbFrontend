@@ -276,10 +276,20 @@ export default function CitizenDetailPage() {
         ...i,
         name: i.name || i.Name,
         staffType: i.staffType || i.StaffType || i.category || i.Category,
+        fatherName: i.fatherName,
+        motherName: i.motherName,
+        dob: i.dob,
+        photoUrl: i.photoUrl,
         mobileNumber: i.mobileNumber || i.MobileNumber,
         address: i.address || i.Address,
+        permanentAddress: i.permanentAddress,
+        localAddress: i.localAddress,
         idProofUrl: i.idProofUrl || i.IdProofUrl,
-        idProofType: i.idProofType || i.IdProofType
+        idProofType: i.idProofType || i.IdProofType,
+        idProofNumber: i.idProofNumber,
+        employedSince: i.employedSince,
+        domesticHelpType: i.domesticHelpType,
+        otherStaffType: i.otherStaffType
     }));
     const medicalHistory = (citizen.medicalHistory?.length ? citizen.medicalHistory : (citizen.MedicalHistory || [])).map((i: any) => ({
         ...i,
@@ -475,47 +485,6 @@ export default function CitizenDetailPage() {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Primary Emergency Contact Card */}
-                            {primaryContact && (
-                                <Card className="overflow-hidden shadow-sm border border-rose-200/80 dark:border-rose-900/40 bg-gradient-to-br from-rose-50/70 via-white to-red-50/40 dark:from-rose-950/20 dark:via-slate-900 dark:to-red-950/10 rounded-2xl">
-                                    <CardHeader className="py-3 px-4 border-b border-rose-100 dark:border-rose-900/40 bg-rose-100/40 dark:bg-rose-950/40">
-                                        <div className="flex items-center justify-between">
-                                            <CardTitle className="text-xs font-extrabold text-rose-900 dark:text-rose-200 flex items-center gap-2 uppercase tracking-wider">
-                                                <Heart className="h-3.5 w-3.5 text-rose-600 fill-rose-600" /> Emergency Contact
-                                            </CardTitle>
-                                            <Badge variant="outline" className="text-[10px] font-bold bg-rose-200/60 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border-rose-300">
-                                                PRIMARY
-                                            </Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="p-4">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="h-10 w-10 rounded-xl bg-rose-100 dark:bg-rose-900/60 flex items-center justify-center text-rose-700 dark:text-rose-300 font-extrabold text-sm shrink-0 uppercase border border-rose-200">
-                                                    {getInitials(primaryContact.name)}
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{primaryContact.name}</p>
-                                                    <p className="text-xs font-medium text-rose-700 dark:text-rose-400 capitalize">{primaryContact.relation || 'Contact'}</p>
-                                                    <p className="text-xs font-mono font-semibold text-slate-600 dark:text-slate-400 mt-0.5">{primaryContact.mobileNumber}</p>
-                                                </div>
-                                            </div>
-                                            {primaryContact.mobileNumber && (
-                                                <Button
-                                                    size="sm"
-                                                    asChild
-                                                    className="bg-rose-600 hover:bg-rose-700 text-white font-semibold h-8 px-3 rounded-lg text-xs shrink-0 shadow-xs"
-                                                >
-                                                    <a href={`tel:${primaryContact.mobileNumber}`}>
-                                                        <Phone className="h-3 w-3 mr-1.5" /> Call
-                                                    </a>
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
                         </div>
 
                         {/* Right Content: Tabs */}
@@ -787,7 +756,7 @@ export default function CitizenDetailPage() {
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        onClick={() => apiClient.viewDocument(citizen.addressProofUrl)}
+                                                        onClick={() => apiClient.viewDocument(citizen.addressProofUrl, 'Address Proof Document')}
                                                         className="h-8 bg-white hover:bg-green-50 text-green-700 border-green-200"
                                                     >
                                                         <Eye className="h-3.5 w-3.5 mr-2" /> View
@@ -823,146 +792,416 @@ export default function CitizenDetailPage() {
                                 </TabsContent>
 
                                 <TabsContent value="family" className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Step 4: Family Details */}
-                                        <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl h-full">
-                                            <CardHeader className="py-3 px-4 border-b bg-muted/10">
-                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    {/* Step 4: Family Details */}
+                                    <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
+                                        <CardHeader className="py-3 px-4 border-b bg-muted/10">
+                                            <CardTitle className="text-sm font-bold flex items-center justify-between">
+                                                <span className="flex items-center gap-2">
                                                     <Users className="h-4 w-4 text-primary" /> Family Members
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="pt-4 pb-4">
-                                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
-                                                    <InfoItem icon={Home} label="Residing With" value={citizen.residingWith} />
-                                                    <InfoItem icon={Baby} label="Children" value={citizen.numberOfChildren} />
-                                                </div>
+                                                </span>
+                                                {familyMembers && familyMembers.length > 0 && (
+                                                    <Badge variant="secondary" className="text-xs font-semibold">
+                                                        {familyMembers.length} {familyMembers.length === 1 ? 'Member' : 'Members'}
+                                                    </Badge>
+                                                )}
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-4 pb-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                                                <InfoItem icon={Home} label="Residing With" value={citizen.residingWith} />
+                                                <InfoItem icon={Baby} label="Children" value={citizen.numberOfChildren} />
+                                            </div>
 
-                                                <div className="space-y-3">
-                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Members List</p>
-                                                    {familyMembers && familyMembers.length > 0 ? (
-                                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                                                            {familyMembers.map((member: any, idx: number) => (
-                                                                <div key={idx} className="flex items-center justify-between p-2.5 bg-card border rounded-lg hover:shadow-sm transition-shadow">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                                                                            {getInitials(member.name)}
-                                                                        </div>
-                                                                        <div className="min-w-0">
-                                                                            <p className="font-medium text-sm truncate">{member.name}</p>
-                                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{member.relation}</p>
-                                                                        </div>
+                                            <div className="space-y-3">
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Members List</p>
+                                                {familyMembers && familyMembers.length > 0 ? (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                        {familyMembers.map((member: any, idx: number) => (
+                                                            <div key={idx} className="flex items-center justify-between p-3 bg-card border rounded-lg hover:shadow-xs transition-shadow">
+                                                                <div className="flex items-center gap-3 min-w-0">
+                                                                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                                                                        {getInitials(member.name)}
                                                                     </div>
-                                                                    <div className="text-right flex items-center gap-2">
-                                                                        {(member.mobileNumber || member.contact) && (
-                                                                            <a href={`tel:${member.mobileNumber || member.contact}`}>
-                                                                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-green-600 hover:bg-green-50 hover:text-green-700">
-                                                                                    <Phone className="h-3.5 w-3.5" />
-                                                                                </Button>
-                                                                            </a>
-                                                                        )}
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="font-semibold text-sm truncate">{member.name}</p>
+                                                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{member.relation}</p>
                                                                     </div>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-center py-6 bg-muted/20 rounded-lg border-dashed border">
-                                                            <p className="text-xs text-muted-foreground italic">No family members listed.</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-
-                                        {/* Step 5: Emergency Contacts */}
-                                        <div className="space-y-6">
-                                            <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
-                                                <CardHeader className="py-3 px-4 border-b bg-muted/10">
-                                                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                                        <AlertCircle className="h-4 w-4 text-primary" /> Emergency Contacts
-                                                    </CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="pt-4 pb-4">
-                                                    {emergencyContacts && emergencyContacts.length > 0 ? (
-                                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                                                            {emergencyContacts.map((contact: any, idx: number) => (
-                                                                <div key={idx} className={`p-3 rounded-xl border flex items-center justify-between ${contact.isPrimary ? 'border-red-200 bg-red-50/30' : 'bg-card'}`}>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-sm ${contact.isPrimary ? 'bg-red-100 text-red-600' : 'bg-muted text-muted-foreground'}`}>
-                                                                            {getInitials(contact.name)}
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="font-semibold text-sm">{contact.name}</p>
-                                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{contact.relation}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                    {contact.mobileNumber && (
-                                                                        <a href={`tel:${contact.mobileNumber}`}>
-                                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-green-600 hover:bg-green-50">
-                                                                                <Phone className="h-4 w-4" />
+                                                                <div className="text-right flex items-center gap-2 shrink-0">
+                                                                    {(member.mobileNumber || member.contact) && (
+                                                                        <a href={`tel:${member.mobileNumber || member.contact}`}>
+                                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-green-600 hover:bg-green-50 hover:text-green-700">
+                                                                                <Phone className="h-3.5 w-3.5" />
                                                                             </Button>
                                                                         </a>
                                                                     )}
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-center py-6 bg-muted/20 rounded-lg border-dashed border">
-                                                            <p className="text-xs text-muted-foreground italic">No emergency contacts listed.</p>
-                                                        </div>
-                                                    )}
-                                                </CardContent>
-                                            </Card>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-6 bg-muted/20 rounded-lg border-dashed border">
+                                                        <p className="text-xs text-muted-foreground italic">No family members listed.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
 
-                                            {/* Step 6: Household Help */}
-                                            <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
-                                                <CardHeader className="py-3 px-4 border-b bg-muted/10">
-                                                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                                        <UserPlus className="h-4 w-4 text-primary" /> Household Help
-                                                    </CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="pt-4 pb-4">
-                                                    {householdHelp && householdHelp.length > 0 ? (
-                                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                                                            {householdHelp.map((help: any, idx: number) => (
-                                                                <div key={idx} className="p-3 rounded-xl border bg-card group hover:shadow-sm transition-all">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
-                                                                                {getInitials(help.name)}
+                                    {/* Step 5: Emergency Contacts */}
+                                    <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
+                                        <CardHeader className="py-3 px-4 border-b bg-muted/10">
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                    <AlertCircle className="h-4 w-4 text-rose-600" /> Emergency Contacts
+                                                </CardTitle>
+                                                {emergencyContacts && emergencyContacts.length > 0 && (
+                                                    <Badge variant="secondary" className="text-xs font-semibold">
+                                                        {emergencyContacts.length} {emergencyContacts.length === 1 ? 'Contact' : 'Contacts'}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="p-4 sm:p-5">
+                                            {emergencyContacts && emergencyContacts.length > 0 ? (
+                                                <div className="space-y-4">
+                                                    {emergencyContacts.map((contact: any, idx: number) => {
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                className={cn(
+                                                                    "p-4 sm:p-5 rounded-xl border bg-card hover:border-border/80 hover:shadow-xs transition-all space-y-3.5",
+                                                                    contact.isPrimary
+                                                                        ? "border-rose-200 bg-gradient-to-r from-rose-50/30 via-card to-card dark:border-rose-900/40 dark:from-rose-950/20"
+                                                                        : "border-border"
+                                                                )}
+                                                            >
+                                                                {/* Top Header: Avatar + Identity + Action Button */}
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                                    <div className="flex items-center gap-3.5 min-w-0">
+                                                                        {/* Initials Avatar */}
+                                                                        <div
+                                                                            className={cn(
+                                                                                "h-12 w-12 rounded-xl flex items-center justify-center font-extrabold text-base shrink-0 shadow-xs border",
+                                                                                contact.isPrimary
+                                                                                    ? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800"
+                                                                                    : "bg-primary/10 text-primary border-primary/20"
+                                                                            )}
+                                                                        >
+                                                                            {getInitials(contact.name)}
+                                                                        </div>
+
+                                                                        {/* Name & Badges */}
+                                                                        <div className="min-w-0 space-y-1">
+                                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                                <h4 className="font-bold text-base text-foreground leading-tight truncate">
+                                                                                    {contact.name || 'Unnamed Contact'}
+                                                                                </h4>
+                                                                                {contact.relation && (
+                                                                                    <Badge variant="outline" className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium capitalize">
+                                                                                        {contact.relation}
+                                                                                    </Badge>
+                                                                                )}
+                                                                                {contact.isPrimary && (
+                                                                                    <Badge variant="outline" className="text-[11px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 flex items-center gap-1">
+                                                                                        <Heart className="h-3 w-3 fill-rose-600 text-rose-600" /> Primary Contact
+                                                                                    </Badge>
+                                                                                )}
                                                                             </div>
-                                                                            <div>
-                                                                                <p className="font-semibold text-sm">{help.name}</p>
-                                                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{help.staffType || 'Staff'}</p>
+
+                                                                            {/* Mobile / Contact Quick Line */}
+                                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                                <span className="font-medium text-foreground/80">Phone:</span>
+                                                                                {contact.mobileNumber ? (
+                                                                                    <a
+                                                                                        href={`tel:${contact.mobileNumber}`}
+                                                                                        className="font-mono font-semibold text-primary hover:underline flex items-center gap-1"
+                                                                                    >
+                                                                                        <Phone className="h-3 w-3" /> {contact.mobileNumber}
+                                                                                    </a>
+                                                                                ) : (
+                                                                                    <span>Not provided</span>
+                                                                                )}
                                                                             </div>
                                                                         </div>
-                                                                        {help.idProofUrl && (
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={(e) => { e.preventDefault(); apiClient.viewDocument(help.idProofUrl); }}
-                                                                                className="h-8 w-8 text-primary hover:bg-primary/5"
-                                                                                title="View ID Proof"
-                                                                            >
-                                                                                <FileCheck className="h-4 w-4" />
-                                                                            </Button>
-                                                                        )}
                                                                     </div>
-                                                                    <div className="mt-2 pl-12 text-xs text-muted-foreground flex items-center gap-2">
-                                                                        <Phone className="h-3 w-3" />
-                                                                        <span className="font-mono">{help.mobileNumber}</span>
+
+                                                                    {/* Action Button: Call */}
+                                                                    {contact.mobileNumber && (
+                                                                        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                                                                            <a href={`tel:${contact.mobileNumber}`}>
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    className={cn(
+                                                                                        "h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs",
+                                                                                        contact.isPrimary
+                                                                                            ? "bg-rose-600 hover:bg-rose-700 text-white"
+                                                                                            : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                                                    )}
+                                                                                    title={`Call ${contact.name}`}
+                                                                                >
+                                                                                    <Phone className="h-3.5 w-3.5" />
+                                                                                    <span>Call Contact</span>
+                                                                                </Button>
+                                                                            </a>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Address (if present) */}
+                                                                {contact.address && (
+                                                                    <div className="pt-3 border-t">
+                                                                        <div className="p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs">
+                                                                            <span className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                                                                                <MapPin className="h-3.5 w-3.5 text-primary" /> Contact Address
+                                                                            </span>
+                                                                            <span className="text-muted-foreground leading-relaxed block break-words">
+                                                                                {contact.address}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-6 bg-muted/20 rounded-lg border-dashed border">
+                                                    <p className="text-xs text-muted-foreground italic">No emergency contacts listed.</p>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Step 6: Household Help */}
+                                    <Card className="shadow-sm border border-slate-100 dark:border-slate-800 bg-card rounded-xl">
+                                        <CardHeader className="py-3 px-4 border-b bg-muted/10">
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                    <UserPlus className="h-4 w-4 text-primary" /> Household Help & Domestic Staff
+                                                </CardTitle>
+                                                {householdHelp && householdHelp.length > 0 && (
+                                                    <Badge variant="secondary" className="text-xs font-semibold">
+                                                        {householdHelp.length} {householdHelp.length === 1 ? 'Staff Member' : 'Staff Members'}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="p-4 sm:p-5">
+                                            {householdHelp && householdHelp.length > 0 ? (
+                                                <div className="space-y-4">
+                                                    {householdHelp.map((help: any, idx: number) => {
+                                                        const isVerified = help.verificationStatus === 'Verified' || help.isVerified;
+                                                        const roleTitle = help.domesticHelpType === 'Any Other' && help.otherStaffType
+                                                            ? help.otherStaffType
+                                                            : (help.domesticHelpType || help.staffType || 'Domestic Help');
+
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                className="p-4 sm:p-5 rounded-xl border bg-card hover:border-border/80 hover:shadow-xs transition-all space-y-4"
+                                                            >
+                                                                {/* Top Header: Avatar + Info on Left, Badges + Actions on Right */}
+                                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                                                    <div className="flex items-start gap-3.5 min-w-0">
+                                                                        {/* Avatar / Passport Photo */}
+                                                                        {help.photoUrl ? (
+                                                                            <div className="relative group w-14 h-16 rounded-lg overflow-hidden border bg-muted shrink-0 shadow-xs">
+                                                                                <img src={help.photoUrl} alt={help.name || 'Staff'} className="w-full h-full object-cover" />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => apiClient.viewDocument(help.photoUrl, `Passport Photo - ${help.name}`)}
+                                                                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                                                                    title="Preview Photo"
+                                                                                >
+                                                                                    <Eye className="h-4 w-4" />
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-base shrink-0">
+                                                                                {getInitials(help.name)}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Main Staff Identity */}
+                                                                        <div className="min-w-0 space-y-1.5">
+                                                                            <h4 className="font-bold text-base text-foreground leading-tight">{help.name || 'Unnamed Staff'}</h4>
+
+                                                                            {/* Contact / Phone */}
+                                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                                <span className="font-medium text-foreground/80">Contact:</span>
+                                                                                {help.mobileNumber ? (
+                                                                                    <a
+                                                                                        href={`tel:${help.mobileNumber}`}
+                                                                                        className="font-mono text-primary hover:underline flex items-center gap-1"
+                                                                                    >
+                                                                                        <Phone className="h-3 w-3" /> {help.mobileNumber}
+                                                                                    </a>
+                                                                                ) : (
+                                                                                    <span>Not provided</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Right Corner: Badges above Action Buttons */}
+                                                                    <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+                                                                        {/* Badges: Designation, Employment Type, Verification Status */}
+                                                                        <div className="flex flex-wrap items-center sm:justify-end gap-1.5">
+                                                                            <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20 font-medium">
+                                                                                {roleTitle}
+                                                                            </Badge>
+                                                                            {(help.jobType || help.employmentType) && (
+                                                                                <Badge variant="secondary" className="text-[11px] font-normal text-muted-foreground">
+                                                                                    {help.jobType || help.employmentType}
+                                                                                </Badge>
+                                                                            )}
+                                                                            <Badge
+                                                                                variant="outline"
+                                                                                className={cn(
+                                                                                    "text-[11px] font-medium flex items-center gap-1",
+                                                                                    isVerified
+                                                                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
+                                                                                        : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+                                                                                )}
+                                                                            >
+                                                                                {isVerified ? (
+                                                                                    <>
+                                                                                        <CheckCircle2 className="h-3 w-3" />
+                                                                                        Verified
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <Clock className="h-3 w-3" />
+                                                                                        {help.verificationStatus || 'Not Verified'}
+                                                                                    </>
+                                                                                )}
+                                                                            </Badge>
+                                                                        </div>
+
+                                                                        {/* Action Buttons: Call, View Signature, and View ID Proof */}
+                                                                        <div className="flex items-center gap-2 sm:justify-end">
+                                                                            {help.mobileNumber && (
+                                                                                <a href={`tel:${help.mobileNumber}`}>
+                                                                                    <Button
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="h-8 px-2.5 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 gap-1.5"
+                                                                                        title={`Call ${help.name}`}
+                                                                                    >
+                                                                                        <Phone className="h-3.5 w-3.5" />
+                                                                                        <span>Call</span>
+                                                                                    </Button>
+                                                                                </a>
+                                                                            )}
+                                                                            {help.signatureUrl && (
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    onClick={(e) => {
+                                                                                        e.preventDefault();
+                                                                                        apiClient.viewDocument(help.signatureUrl, `${help.name || 'Staff'} Thumb Impression / Signature`);
+                                                                                    }}
+                                                                                    className="h-8 px-2.5 text-xs text-blue-700 border-blue-200 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 gap-1.5"
+                                                                                    title="View Thumb Impression or Signature"
+                                                                                >
+                                                                                    <Eye className="h-3.5 w-3.5 text-blue-600" />
+                                                                                    <span>Thumb / Sign</span>
+                                                                                </Button>
+                                                                            )}
+                                                                            {help.idProofUrl && (
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    onClick={(e) => {
+                                                                                        e.preventDefault();
+                                                                                        apiClient.viewDocument(help.idProofUrl, `${help.staffType || 'Staff'} ID Proof (${help.name || 'Staff'})`);
+                                                                                    }}
+                                                                                    className="h-8 px-2.5 text-xs text-primary border-primary/20 hover:bg-primary/5 gap-1.5"
+                                                                                    title="View Identity Proof Document"
+                                                                                >
+                                                                                    <FileCheck className="h-3.5 w-3.5 text-primary" />
+                                                                                    <span>View ID Proof</span>
+                                                                                </Button>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-center py-6 bg-muted/20 rounded-lg border-dashed border">
-                                                            <p className="text-xs text-muted-foreground italic">No household help registered.</p>
-                                                        </div>
-                                                    )}
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    </div>
+
+                                                                {/* Detail Fields Grid */}
+                                                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pt-3 border-t">
+                                                                    <div className="p-2.5 rounded-lg bg-muted/20 border border-border/40">
+                                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Father's Name</p>
+                                                                        <p className="text-sm font-semibold text-foreground truncate">{help.fatherName || '—'}</p>
+                                                                    </div>
+                                                                    <div className="p-2.5 rounded-lg bg-muted/20 border border-border/40">
+                                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Mother's Name</p>
+                                                                        <p className="text-sm font-semibold text-foreground truncate">{help.motherName || '—'}</p>
+                                                                    </div>
+                                                                    <div className="p-2.5 rounded-lg bg-muted/20 border border-border/40">
+                                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Date of Birth</p>
+                                                                        <p className="text-sm font-semibold text-foreground">
+                                                                            {help.dob ? (help.dob.includes('T') ? help.dob.split('T')[0] : help.dob) : '—'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="p-2.5 rounded-lg bg-muted/20 border border-border/40">
+                                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Employed Since</p>
+                                                                        <p className="text-sm font-semibold text-foreground">
+                                                                            {help.employedSince ? (help.employedSince.includes('T') ? help.employedSince.split('T')[0] : help.employedSince) : '—'}
+                                                                        </p>
+                                                                    </div>
+                                                                    {help.idProofType && (
+                                                                        <div className="p-2.5 rounded-lg bg-muted/20 border border-border/40">
+                                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">ID Document Type</p>
+                                                                            <p className="text-sm font-semibold text-foreground">{help.idProofType}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {help.idProofNumber && (
+                                                                        <div className="p-2.5 rounded-lg bg-muted/20 border border-border/40">
+                                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">ID Proof Number</p>
+                                                                            <p className="text-sm font-semibold text-foreground font-mono">{help.idProofNumber}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Addresses */}
+                                                                {(help.permanentAddress || help.localAddress || help.address) && (
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t">
+                                                                        {help.permanentAddress && (
+                                                                            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs">
+                                                                                <span className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                                                                                    <Home className="h-3.5 w-3.5 text-primary" /> Permanent Address
+                                                                                </span>
+                                                                                <span className="text-muted-foreground leading-relaxed block break-words">
+                                                                                    {help.permanentAddress}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                        {(help.localAddress || help.address) && (
+                                                                            <div className="p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs">
+                                                                                <span className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                                                                                    <MapPin className="h-3.5 w-3.5 text-primary" /> Local / Present Address
+                                                                                </span>
+                                                                                <span className="text-muted-foreground leading-relaxed block break-words">
+                                                                                    {help.localAddress || help.address}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 bg-muted/10 rounded-xl border-dashed border">
+                                                    <User className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                                                    <p className="text-sm font-medium text-muted-foreground">No household help registered.</p>
+                                                    <p className="text-xs text-muted-foreground/70 mt-0.5">Domestic helpers, drivers, and caregivers will appear here once added.</p>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
                                 </TabsContent>
 
                                 <TabsContent value="health" className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
