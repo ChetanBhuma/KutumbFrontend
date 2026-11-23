@@ -374,25 +374,25 @@ export default function VisitsPage() {
                     {pendingVerificationsCount} New Citizen Registration{pendingVerificationsCount > 1 ? 's' : ''} Awaiting Physical Verification
                   </span>
                   <p className="text-xs text-amber-700 mt-0.5">
-                    Newly registered senior citizens require a physical verification visit before routine visits can take place. They will appear in this visits table as soon as a verification visit is scheduled.
+                    Newly registered senior citizens require SHO beat officer assignment for physical verification. Assign beat officers in Approvals to schedule their verification visit.
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="text-xs border-amber-300 text-amber-900 hover:bg-amber-100 bg-white"
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
                   onClick={() => router.push('/approvals')}
                 >
-                  View Approvals
+                  Assign Beat Officers in Approvals
                 </Button>
                 <Button
                   size="sm"
-                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  variant="outline"
+                  className="text-xs border-amber-300 text-amber-900 hover:bg-amber-100 bg-white"
                   onClick={() => router.push('/visits/schedule')}
                 >
-                  Schedule Verification
+                  Schedule Other Visit
                 </Button>
               </div>
             </div>
