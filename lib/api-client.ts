@@ -306,16 +306,90 @@ class ApiClient {
         if (!fileUrl) return;
 
         try {
-            const cleanName = fileUrl.split('?')[0].split('/').pop() || 'document';
+            const trimmedUrl = fileUrl.trim();
             const docTitle = title || 'Document Preview';
 
-            // Handle cloud/external URLs
-            if (fileUrl.startsWith('http') && !fileUrl.includes(window.location.host) && !fileUrl.includes('localhost:5000') && !fileUrl.includes('/api/v1/')) {
+            // Handle inline Base64 data URIs (including WAF-safe ":base64,"), raw Base64, or blob: URLs locally
+            // without sending them as HTTP request URLs (which triggers 431 Request Header Fields Too Large).
+            const isDataUri = trimmedUrl.startsWith('data:');
+            const isRawBase64 =
+                trimmedUrl.startsWith('/9j/') ||
+                trimmedUrl.startsWith('iVBOR') ||
+                trimmedUrl.startsWith('JVBERi0');
+
+            if (isDataUri || isRawBase64) {
+                let mimeType = 'application/octet-stream';
+                let base64Payload = trimmedUrl;
+
+                if (isDataUri) {
+                    const normalized = trimmedUrl.replace(':base64,', ';base64,');
+                    const commaIdx = normalized.indexOf(',');
+                    const header = commaIdx !== -1 ? normalized.slice(5, commaIdx) : '';
+                    mimeType = header.split(';')[0] || mimeType;
+                    base64Payload = commaIdx !== -1 ? normalized.slice(commaIdx + 1) : '';
+                } else if (trimmedUrl.startsWith('JVBERi0')) {
+                    mimeType = 'application/pdf';
+                } else if (trimmedUrl.startsWith('iVBOR')) {
+                    mimeType = 'image/png';
+                } else if (trimmedUrl.startsWith('/9j/')) {
+                    mimeType = 'image/jpeg';
+                }
+
+                const cleanBase64 = base64Payload.replace(/[\r\n\s]/g, '');
+                const binaryStr = atob(cleanBase64);
+                const bytes = new Uint8Array(binaryStr.length);
+                for (let i = 0; i < binaryStr.length; i++) {
+                    bytes[i] = binaryStr.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: mimeType });
+                const blobUrl = URL.createObjectURL(blob);
+                const isPdf = mimeType.includes('pdf');
+                const isImage = mimeType.startsWith('image/');
+                const ext = isPdf ? 'pdf' : (mimeType.split('/')[1] || 'bin');
+
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(
                         new CustomEvent('kutumb:open-document-preview', {
                             detail: {
-                                url: fileUrl,
+                                url: trimmedUrl,
+                                title: docTitle,
+                                fileName: `${docTitle.replace(/\s+/g, '_')}.${ext}`,
+                                blob,
+                                blobUrl,
+                                fileType: isPdf ? 'pdf' : (isImage ? 'image' : 'other')
+                            }
+                        })
+                    );
+                }
+                return;
+            }
+
+            if (trimmedUrl.startsWith('blob:')) {
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(
+                        new CustomEvent('kutumb:open-document-preview', {
+                            detail: {
+                                url: trimmedUrl,
+                                title: docTitle,
+                                fileName: 'document',
+                                blobUrl: trimmedUrl,
+                                fileType: 'other'
+                            }
+                        })
+                    );
+                }
+                return;
+            }
+
+            const cleanName = trimmedUrl.split('?')[0].split('/').pop() || 'document';
+
+            // Handle cloud/external URLs
+            if (trimmedUrl.startsWith('http') && !trimmedUrl.includes(window.location.host) && !trimmedUrl.includes('localhost:5000') && !trimmedUrl.includes('/api/v1/')) {
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(
+                        new CustomEvent('kutumb:open-document-preview', {
+                            detail: {
+                                url: trimmedUrl,
                                 title: docTitle,
                                 fileName: cleanName,
                             }
