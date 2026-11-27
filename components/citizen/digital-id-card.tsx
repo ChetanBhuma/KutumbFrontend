@@ -76,14 +76,34 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
                 </Button>
             </div>
 
-            {/* Cards Container */}
-            <div ref={cardRef} style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '100%', maxWidth: '850px' }}>
+            {/* Print styles for true physical CR80 (85.6mm × 54mm) */}
+            <style>{`
+                @media print {
+                    .cr80-card-list {
+                        max-width: none !important;
+                        gap: 8mm !important;
+                    }
+                    .cr80-card {
+                        width: 85.6mm !important;
+                        height: 54mm !important;
+                        border-radius: 3.18mm !important;
+                        box-shadow: none !important;
+                        page-break-inside: avoid;
+                    }
+                }
+            `}</style>
+
+            {/* Cards Container (CR80: 85.6 × 54 mm) */}
+            <div ref={cardRef} className="cr80-card-list" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', width: '100%', maxWidth: '540px' }}>
 
                 {/* ══════════════════════════════════════ */}
                 {/*           FRONT OF CARD               */}
                 {/* ══════════════════════════════════════ */}
-                <div style={{
+                <div className="cr80-card" style={{
                     width: '100%',
+                    aspectRatio: '85.6 / 54',
+                    display: 'flex',
+                    flexDirection: 'column',
                     borderRadius: '12px',
                     overflow: 'hidden',
                     boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
@@ -94,47 +114,52 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '14px 24px',
+                        padding: '8px 14px',
+                        flexShrink: 0,
                     }}>
                         {/* Left Logo */}
                         <div style={{
-                            width: '76px', height: '76px',
-                            borderRadius: '8px',
+                            width: '46px', height: '46px',
+                            borderRadius: '6px',
                             flexShrink: 0,
                             background: '#FFFFFF',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                         }}>
-                            <img src="/logo-without-text.png" alt="Delhi Police" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                            <img src="/logo-without-text.png" alt="Delhi Police" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                         </div>
 
                         {/* Title */}
                         <div style={{ flex: 1, textAlign: 'center' }}>
-                            <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', letterSpacing: '2px', lineHeight: 1.1 }}>DELHI POLICE</div>
-                            <div style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '3px', marginTop: '2px' }}>SENIOR CITIZEN  CARD</div>
+                            <div style={{ fontSize: '21px', fontWeight: '900', color: '#FFFFFF', letterSpacing: '1.5px', lineHeight: 1.1 }}>DELHI POLICE</div>
+                            <div style={{ fontSize: '11.5px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '2px', marginTop: '2px' }}>SENIOR CITIZEN  CARD</div>
                         </div>
 
                         {/* Right Logo */}
                         <div style={{
-                            width: '76px', height: '76px',
-                            borderRadius: '8px',
+                            width: '46px', height: '46px',
+                            borderRadius: '6px',
                             flexShrink: 0,
                             background: '#FFFFFF',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                         }}>
-                            <img src="/SeniorCitisenLogo.png" alt="Senior Citizen" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                            <img src="/SeniorCitisenLogo.png" alt="Senior Citizen" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                         </div>
                     </div>
 
                     {/* ── Body ── */}
                     <div style={{
                         background: '#ededd1',
-                        padding: '28px 28px 24px 28px',
+                        padding: '14px 16px 12px 16px',
                         position: 'relative',
-                        minHeight: '340px',
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
                     }}>
                         {/* Watermark - centered */}
                         <div style={{
@@ -146,16 +171,16 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
                             pointerEvents: 'none',
                             zIndex: 0,
                         }}>
-                            <img src="/SeniorCitisenLogo.png" alt="" style={{ width: '260px', height: '260px', objectFit: 'contain' }} />
+                            <img src="/SeniorCitisenLogo.png" alt="" style={{ width: '160px', height: '160px', objectFit: 'contain' }} />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '28px', position: 'relative', zIndex: 1 }}>
+                        <div style={{ display: 'flex', gap: '14px', position: 'relative', zIndex: 1 }}>
                             {/* Photo */}
                             <div style={{ flexShrink: 0 }}>
                                 <div style={{
-                                    width: '140px',
-                                    height: '170px',
-                                    border: '3px solid #556B2F',
+                                    width: '94px',
+                                    height: '116px',
+                                    border: '2px solid #556B2F',
                                     borderRadius: '4px',
                                     overflow: 'hidden',
                                     background: '#e5e7eb',
@@ -167,66 +192,60 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
                                             width: '100%', height: '100%',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             background: '#d1d5db', color: '#6b7280',
-                                            fontSize: '14px', fontWeight: 'bold',
+                                            fontSize: '11px', fontWeight: 'bold',
                                         }}>PHOTO</div>
                                     )}
                                 </div>
                             </div>
 
                             {/* Details */}
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
                                 <div>
                                     {/* NAME */}
-                                    <div style={{ display: 'flex', marginBottom: '10px' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', width: '120px', flexShrink: 0, color: '#000' }}>NAME</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', marginRight: '8px' }}>:</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '700', color: '#000', textTransform: 'uppercase' }}>{citizen.fullName || 'N/A'}</span>
+                                    <div style={{ display: 'flex', marginBottom: '5px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', width: '78px', flexShrink: 0, color: '#000' }}>NAME</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', marginRight: '6px' }}>:</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{citizen.fullName || 'N/A'}</span>
                                     </div>
                                     {/* D.O.B */}
-                                    <div style={{ display: 'flex', marginBottom: '10px' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', width: '120px', flexShrink: 0, color: '#000' }}>D.O.B</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', marginRight: '8px' }}>:</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>{formatDate(citizen.dateOfBirth)}</span>
+                                    <div style={{ display: 'flex', marginBottom: '5px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', width: '78px', flexShrink: 0, color: '#000' }}>D.O.B</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', marginRight: '6px' }}>:</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#000' }}>{formatDate(citizen.dateOfBirth)}</span>
                                     </div>
                                     {/* PH.NO. */}
-                                    <div style={{ display: 'flex', marginBottom: '10px' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', width: '120px', flexShrink: 0, color: '#000' }}>PH.NO.</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', marginRight: '8px' }}>:</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>{citizen.mobileNumber || 'N/A'}</span>
+                                    <div style={{ display: 'flex', marginBottom: '5px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', width: '78px', flexShrink: 0, color: '#000' }}>PH.NO.</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', marginRight: '6px' }}>:</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#000' }}>{citizen.mobileNumber || 'N/A'}</span>
                                     </div>
                                     {/* P.S */}
-                                    <div style={{ display: 'flex', marginBottom: '10px' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', width: '120px', flexShrink: 0, color: '#000' }}>P.S</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', marginRight: '8px' }}>:</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '700', color: '#000', textTransform: 'uppercase' }}>{citizen.PoliceStation?.name || 'N/A'}</span>
+                                    <div style={{ display: 'flex', marginBottom: '5px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', width: '78px', flexShrink: 0, color: '#000' }}>P.S</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', marginRight: '6px' }}>:</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{citizen.PoliceStation?.name || 'N/A'}</span>
                                     </div>
                                     {/* ADDRESS */}
                                     <div style={{ display: 'flex' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', width: '120px', flexShrink: 0, color: '#000' }}>ADDRESS</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', marginRight: '8px' }}>:</span>
-                                        <span style={{ fontSize: '16px', fontWeight: '700', color: '#000', lineHeight: '1.4' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', width: '78px', flexShrink: 0, color: '#000' }}>ADDRESS</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', marginRight: '6px' }}>:</span>
+                                        <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#000', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                             {citizen.addressLine1 && citizen.addressLine2
                                                 ? `${citizen.addressLine1}, ${citizen.addressLine2}, ${citizen.city || ''}`
                                                 : citizen.permanentAddress || 'N/A'}
                                         </span>
                                     </div>
                                 </div>
-
-                                {/* Signature Area - bottom right of details */}
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        {/* Empty space for actual signature image in production */}
-                                        <div style={{ width: '150px', height: '50px' }} />
-                                        <div style={{ borderTop: '2px solid #000', width: '150px' }} />
-                                        <span style={{ fontSize: '14px', fontWeight: '800', color: '#000', marginTop: '4px', letterSpacing: '0.5px' }}>Issuing Authority</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
-                        {/* ID Number - bottom left */}
-                        <div style={{ position: 'absolute', bottom: '20px', left: '28px', zIndex: 1 }}>
-                            <span style={{ fontSize: '16px', fontWeight: '900', color: '#000' }}>ID.NO :  {citizen.digitalCardNumber || '00000'}</span>
+                        {/* Bottom Row: ID Number & Issuing Authority */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 1 }}>
+                            <span style={{ fontSize: '11.5px', fontWeight: '900', color: '#000' }}>ID.NO :  {citizen.digitalCardNumber || '00000'}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <div style={{ borderTop: '1.5px solid #000', width: '110px' }} />
+                                <span style={{ fontSize: '10px', fontWeight: '800', color: '#000', marginTop: '3px', letterSpacing: '0.4px' }}>Issuing Authority</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -234,8 +253,11 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
                 {/* ══════════════════════════════════════ */}
                 {/*           BACK OF CARD                */}
                 {/* ══════════════════════════════════════ */}
-                <div style={{
+                <div className="cr80-card" style={{
                     width: '100%',
+                    aspectRatio: '85.6 / 54',
+                    display: 'flex',
+                    flexDirection: 'column',
                     borderRadius: '12px',
                     overflow: 'hidden',
                     boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
@@ -246,26 +268,28 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '14px 24px',
+                        padding: '8px 14px',
+                        flexShrink: 0,
                     }}>
-                        <div style={{ width: '76px', height: '76px', borderRadius: '8px', flexShrink: 0, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <img src="/logo-without-text.png" alt="Delhi Police" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                        <div style={{ width: '46px', height: '46px', borderRadius: '6px', flexShrink: 0, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src="/logo-without-text.png" alt="Delhi Police" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                         </div>
                         <div style={{ flex: 1, textAlign: 'center' }}>
-                            <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', letterSpacing: '2px', lineHeight: 1.1 }}>DELHI POLICE</div>
-                            <div style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '3px', marginTop: '2px' }}>SENIOR CITIZEN  CARD</div>
+                            <div style={{ fontSize: '21px', fontWeight: '900', color: '#FFFFFF', letterSpacing: '1.5px', lineHeight: 1.1 }}>DELHI POLICE</div>
+                            <div style={{ fontSize: '11.5px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '2px', marginTop: '2px' }}>SENIOR CITIZEN  CARD</div>
                         </div>
-                        <div style={{ width: '76px', height: '76px', borderRadius: '8px', flexShrink: 0, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <img src="/SeniorCitisenLogo.png" alt="Senior Citizen" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                        <div style={{ width: '46px', height: '46px', borderRadius: '6px', flexShrink: 0, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src="/SeniorCitisenLogo.png" alt="Senior Citizen" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                         </div>
                     </div>
 
                     {/* ── Body ── */}
                     <div style={{
                         background: '#ededd1',
-                        padding: '24px 28px 24px 28px',
+                        padding: '14px 16px',
                         position: 'relative',
-                        minHeight: '340px',
+                        flex: 1,
+                        minHeight: 0,
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
@@ -280,44 +304,44 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
                             pointerEvents: 'none',
                             zIndex: 0,
                         }}>
-                            <img src="/SeniorCitisenLogo.png" alt="" style={{ width: '280px', height: '280px', objectFit: 'contain' }} />
+                            <img src="/SeniorCitisenLogo.png" alt="" style={{ width: '165px', height: '165px', objectFit: 'contain' }} />
                         </div>
 
                         {/* Top: Details + QR */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
                             <div>
                                 {/* DATE OF ISSUE */}
-                                <div style={{ display: 'flex', marginBottom: '10px' }}>
-                                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#000' }}>DARE OF ISSUE</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', margin: '0 8px' }}>:</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>{issueDate}</span>
+                                <div style={{ display: 'flex', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#000' }}>DARE OF ISSUE</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', margin: '0 6px' }}>:</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#000' }}>{issueDate}</span>
                                 </div>
                                 {/* EMERGENCY NO */}
-                                <div style={{ display: 'flex', marginBottom: '10px' }}>
-                                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#000' }}>EMERGENCY NO</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', margin: '0 8px' }}>:</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>{citizen.EmergencyContact?.[0]?.mobileNumber || 'N/A'}</span>
+                                <div style={{ display: 'flex', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#000' }}>EMERGENCY NO</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', margin: '0 6px' }}>:</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#000' }}>{citizen.EmergencyContact?.[0]?.mobileNumber || 'N/A'}</span>
                                 </div>
                                 {/* DOCTOR CONTACT NO */}
-                                <div style={{ display: 'flex', marginBottom: '10px' }}>
-                                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#000' }}>DOCTORE CONTACT NO</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#000', margin: '0 8px' }}>:</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>{citizen.doctorContact || 'N/A'}</span>
+                                <div style={{ display: 'flex', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#000' }}>DOCTORE CONTACT NO</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#000', margin: '0 6px' }}>:</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#000' }}>{citizen.doctorContact || 'N/A'}</span>
                                 </div>
                             </div>
 
                             {/* QR Code */}
                             <div style={{
                                 background: '#ffffff',
-                                padding: '6px',
+                                padding: '4px',
                                 borderRadius: '4px',
-                                border: '2px solid #333',
+                                border: '1.5px solid #333',
                                 flexShrink: 0,
-                                marginLeft: '16px',
+                                marginLeft: '12px',
                             }}>
                                 <QRCodeSVG
                                     value={qrData}
-                                    size={110}
+                                    size={74}
                                     level="H"
                                     includeMargin={false}
                                 />
@@ -326,49 +350,44 @@ export function DigitalIdCard({ citizen }: DigitalIdCardProps) {
 
                         {/* Helpline Banner */}
                         <div style={{
-                            // border: '2px solid #556421',
                             borderRadius: '30px',
                             position: 'relative',
                             zIndex: 1,
-                            marginTop: '5px',
                             textAlign: 'center',
-                            fontSize: '16px',
+                            fontSize: '11px',
                             fontWeight: 900,
                             color: '#000000ff',
-                            letterSpacing: '1px',
+                            letterSpacing: '0.6px',
                         }}>
                             SENIOR CITIZEN HELPLINE NUMBER - 1291 &nbsp;|&nbsp; ERSS - 112
                         </div>
 
                         {/* Validity Banner */}
                         <div style={{
-                            // border: '2px solid #DC2626',
                             borderRadius: '30px',
                             position: 'relative',
                             zIndex: 1,
-                            marginTop: '5px',
                             textAlign: 'center',
-                            fontSize: '16px',
+                            fontSize: '11px',
                             fontWeight: 900,
                             color: '#000000ff',
-                            letterSpacing: '1px',
+                            letterSpacing: '0.6px',
                         }}>
                             VALID UPTO : 3 YEARS FROM THE DATE OF ISSUE
                         </div>
 
-                        {/* Lost/Found Notice - red text */}
+                        {/* Lost/Found Notice */}
                         <div style={{
                             textAlign: 'center',
                             position: 'relative',
                             zIndex: 1,
-                            marginTop: '5px',
                         }}>
                             <span style={{
-                                fontSize: '13px',
+                                fontSize: '9.5px',
                                 fontWeight: '800',
                                 color: '#000000ff',
-                                lineHeight: '1.6',
-                                letterSpacing: '0.5px',
+                                lineHeight: '1.35',
+                                letterSpacing: '0.4px',
                                 textTransform: 'uppercase',
                             }}>
                                 IN CASE, THIS CARD IS LOST/FOUND, KINDLY INFORM RETURN TO THE NEAREST POLICE STATION
